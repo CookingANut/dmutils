@@ -1,17 +1,12 @@
 import os
 import logging
-import platform
-if platform.system() == "Windows":
-    import winreg
+import winreg
 import time
 import json
 
 def desktop_path():
-    if platform.system() == "Windows":
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
-        return winreg.QueryValueEx(key, "Desktop")[0]
-    else:
-        return "/home/"
+    key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
+    return winreg.QueryValueEx(key, "Desktop")[0]
 
 
 def get_all_path(rootdir):
@@ -88,7 +83,7 @@ def timethis(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = round((time.time() - start), 3)
-        print(f'{func.__name__} running time: {end} sec.')
+        print(f'{func.__name__} running time: {end}sec.')
         return result
     return wrapper
 
@@ -113,6 +108,7 @@ def dict2json(target_dict, json_name, json_path):
 def json2dict(json_path):
     with open(json_path,'r', encoding='UTF-8') as f:
         return json.load(f)
+
 
 
 SEP = os.sep
