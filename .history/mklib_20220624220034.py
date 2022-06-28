@@ -13,9 +13,10 @@ def get_all_path(rootdir):
 
 
 setup_path = os.path.join(os.getcwd(), 'setup.py')
-os.system(f'python "{setup_path}" sdist')
 lib_path = get_all_path(os.path.join(os.getcwd(), 'dist'))[0]
+
+os.system(f'python "{setup_path}" sdist')
+
 need_install = input('Do you need install it now? y/n')
 if need_install == 'y':
     os.system(f'pip3 install "{lib_path}"')
-
