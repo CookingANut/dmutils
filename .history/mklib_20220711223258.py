@@ -4,6 +4,7 @@ from daemontool import get_all_path
 
 setup_path = os.path.join(os.getcwd(), 'setup.py')
 dist_path = os.path.join(os.getcwd(), 'dist')
+print(os.path.join(dist_path, os.listdir(dist_path)))
 
 # in windows need to use "{path}" to include the path, not '{path}'
 os.system(f'rd /s /q "{dist_path}"')

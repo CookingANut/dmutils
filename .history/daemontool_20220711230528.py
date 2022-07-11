@@ -23,13 +23,11 @@ def desktop_path():
     else:
         return "/home/"
 
-
 def get_path(path):
     """generate all abs path under the given path"""
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             yield os.path.join(dirname, filename)
-
 
 def folder_level_X_path(path, level=3):
     """return the level of the path under the given path"""
@@ -46,7 +44,6 @@ def folder_level_X_path(path, level=3):
             path_list.extend(folder_level_X_path(com_path, level=level-1))
     return path_list
 
-
 def get_all_path(rootdir):
     """return all files abs paths in the given directory"""
     path_list = []
@@ -59,16 +56,13 @@ def get_all_path(rootdir):
             path_list.extend(get_all_path(com_path))
     return path_list
 
-
 def get_runtime_path():
     """return Current directory path"""
     return os.getcwd()
 
-
 def join_path(path, file):
     """fake os.path.join method"""
     return os.path.join(path, file)
-
 
 def get_current_time(format="%Y-%m-%d %H:%M:%S"):
     """
@@ -76,7 +70,6 @@ def get_current_time(format="%Y-%m-%d %H:%M:%S"):
     default format: %Y-%m-%d %H:%M:%S
     """
     return time.strftime(format, time.localtime())
-
 
 def __logorder__(func):
     """A wrapper for mylogging"""
@@ -90,7 +83,6 @@ def __logorder__(func):
             pass
         return func(self, msg)
     return wrapper
-
 
 class mylogging():
     """
@@ -130,7 +122,6 @@ class mylogging():
     def error(self, msg):
         pass
 
-
 def timethis(func):
     """A wrapper for counting functions time spent"""
     def wrapper(*args, **kwargs):
@@ -141,7 +132,6 @@ def timethis(func):
         return result
     return wrapper
 
-
 def mkdir(path):
     """make directorys for the given path"""
     path = path.strip().rstrip("\\")
@@ -149,7 +139,6 @@ def mkdir(path):
         os.makedirs(path)
     else:
         print(f'{path} existed!')
-
 
 def dict2json(target_dict, json_name, json_path):
     """"dict to json"""
@@ -160,10 +149,9 @@ def dict2json(target_dict, json_name, json_path):
     with open(file, 'w') as json_file:
         json_file.write(content)
 
-
 def json2dict(json_path):
     """"json to dict"""
-    with open(json_path, 'r', encoding='UTF-8') as f:
+    with open(json_path,'r', encoding='UTF-8') as f:
         return json.load(f)
 
 
@@ -173,4 +161,3 @@ DESKTOP = desktop_path()
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info('welcome to use daemontool!')
-    daemontool_log.info('Version: 3.1')

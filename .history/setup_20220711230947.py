@@ -1,10 +1,11 @@
 from setuptools import setup
+from .daemontool import VERSION
 
 setup(
     name='daemontool',
     version=3.1,
-    author='Daemon Huang',
-    author_email='morningrocks@outlook.com',
+    author='daemon_huang',
+    author_email='daemonh@nvidia.com',
     url='',
     install_requires=[],
     python_requires='>=3',
