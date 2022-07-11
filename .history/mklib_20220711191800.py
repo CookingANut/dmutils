@@ -5,8 +5,7 @@ from daemontool import get_all_path
 setup_path = os.path.join(os.getcwd(), 'setup.py')
 dist_path = os.path.join(os.getcwd(), 'dist')
 
-# in windows need to use "{path}" to include the path, not '{path}'
-os.system(f'rd /s /q "{dist_path}"')
+os.symtem(f'rd {dist_path}')
 os.system(f'python "{setup_path}" sdist')
 
 lib_path = get_all_path(dist_path)[0]
