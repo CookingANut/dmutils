@@ -1,11 +1,10 @@
 # author: Daemon Huang
-# date: 2022/7/12
-# version: 3.2
+# date: 2022/7/11
+# version: 3.1
 
 # 2.0: WAR for winreg in linux system
 # 3.0: add get_path and folder_level_X_path functions
 # 3.1: update notes for all functions
-# 3.2: add parserinit function
 
 import os
 import logging
@@ -172,7 +171,7 @@ def json2dict(json_path):
 def parserinit(description, *args:dict):
     parser = argparse.ArgumentParser(description=description)
     for arg in args:
-        if 'param' and 'help' in arg.keys():
+        if 'param' and 'help' in arg.keys:
             parser.add_argument(arg['param'], help=arg['help'])
         else:
             raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")

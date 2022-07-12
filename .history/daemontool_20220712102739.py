@@ -169,10 +169,10 @@ def json2dict(json_path):
         return json.load(f)
 
 
-def parserinit(description, *args:dict):
-    parser = argparse.ArgumentParser(description=description)
+def parserinit(*args:dict):
+    parser = argparse.ArgumentParser()
     for arg in args:
-        if 'param' and 'help' in arg.keys():
+        if 'param' and 'help' in arg.keys:
             parser.add_argument(arg['param'], help=arg['help'])
         else:
             raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")

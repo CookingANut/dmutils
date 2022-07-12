@@ -1,11 +1,7 @@
-Metadata-Version: 1.2
+Metadata-Version: 2.1
 Name: daemontool
-Version: 3.1
-Summary: UNKNOWN
-Home-page: UNKNOWN
+Version: 3.2
+Home-page: 
 Author: Daemon Huang
 Author-email: morningrocks@outlook.com
-License: UNKNOWN
-Description: UNKNOWN
-Platform: UNKNOWN
 Requires-Python: >=3

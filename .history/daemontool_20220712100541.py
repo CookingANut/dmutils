@@ -1,11 +1,10 @@
 # author: Daemon Huang
-# date: 2022/7/12
-# version: 3.2
+# date: 2022/7/11
+# version: 3.1
 
 # 2.0: WAR for winreg in linux system
 # 3.0: add get_path and folder_level_X_path functions
 # 3.1: update notes for all functions
-# 3.2: add parserinit function
 
 import os
 import logging
@@ -168,16 +167,23 @@ def json2dict(json_path):
     with open(json_path, 'r', encoding='UTF-8') as f:
         return json.load(f)
 
-
 def parserinit(description, *args:dict):
     parser = argparse.ArgumentParser(description=description)
     for arg in args:
-        if 'param' and 'help' in arg.keys():
+        if 'param' and 'help' in arg.keys:
             parser.add_argument(arg['param'], help=arg['help'])
         else:
-            raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")
+            raise "Wrong arguments, arg['param'] and arg['help] must need"
     return parser.parse_args()
 
+
+
+def only_ts(*args):
+    for arg in args:
+        if 'param' and 'help' in arg.keys():
+            print('pass')
+        else:
+            raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")
 
 SEP = os.sep
 DESKTOP = desktop_path()
@@ -186,4 +192,4 @@ if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info('welcome to use daemontool!')
     daemontool_log.info('Version: 3.1')
-
+    only_ts({'1':1, '2':2}, {'1':3, '2':4}, {'1':5, '2':6})
