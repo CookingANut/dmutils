@@ -1,8 +1,9 @@
 from setuptools import setup
+from VERSION import VERSION
 
 setup(
     name='daemontool',
-    version='3.3',
+    version=VERSION,
     author='Daemon Huang',
     author_email='morningrocks@outlook.com',
     url='',

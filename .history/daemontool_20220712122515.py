@@ -1,12 +1,11 @@
-# Author: Daemon Huang
-# Date: 2022/7/12
-# Version: 3.3
+# author: Daemon Huang
+# date: 2022/7/12
+# version: 3.2
 
-# - 2.0: WAR for winreg in linux system
-# - 3.0: add get_path and folder_level_X_path functions
-# - 3.1: update notes for all functions
-# - 3.2: add parserinit function
-# - 3.3: add CodeTimer class
+# 2.0: WAR for winreg in linux system
+# 3.0: add get_path and folder_level_X_path functions
+# 3.1: update notes for all functions
+# 3.2: add parserinit function
 
 import os
 import logging
@@ -147,12 +146,12 @@ def timethis(func):
 
 class CodeTimer(object):
     """
-    Class for counting functions time spent\n
-    use: \n
+    Class for counting functions time spent
+    use: 
     with CodeTimer():
-        code line\n
-        code line\n
-        ...\n
+        code line
+        code line
+        ...
     """
     def __init__(self, keep_num=3):
         self.start = time.time()
@@ -196,19 +195,8 @@ def parserinit(description, *args:dict):
     """
     add arguments for scripts
     use:
-        args = parserinit(\n
-        'Script description',\n
-        {
-            'param': '-arg1',
-            'help': 'help1'
-        },\n
-        {
-            'param': '-arg2',
-            'help': 'help2'
-        },
-        ....more args
-        )\n
-    then you can get arg by args.args1, args.args2 ...
+    parserinit(
+        
     """
     parser = argparse.ArgumentParser(description=description)
     for arg in args:
@@ -221,10 +209,9 @@ def parserinit(description, *args:dict):
 
 SEP = os.sep
 DESKTOP = desktop_path()
-CURRENTTIME = get_current_time()
-CURRENTWORKDIR = get_runtime_path()
 
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info('welcome to use daemontool!')
+    daemontool_log.info('Version: 3.1')
 

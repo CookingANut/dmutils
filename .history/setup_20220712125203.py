@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='daemontool',
-    version='3.3',
+    version=3.3,
     author='Daemon Huang',
     author_email='morningrocks@outlook.com',
     url='',

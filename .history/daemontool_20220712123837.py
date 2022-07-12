@@ -1,6 +1,5 @@
 # Author: Daemon Huang
 # Date: 2022/7/12
-# Version: 3.3
 
 # - 2.0: WAR for winreg in linux system
 # - 3.0: add get_path and folder_level_X_path functions
@@ -8,6 +7,7 @@
 # - 3.2: add parserinit function
 # - 3.3: add CodeTimer class
 
+from VERSION import VERSION
 import os
 import logging
 import platform
@@ -207,7 +207,7 @@ def parserinit(description, *args:dict):
             'help': 'help2'
         },
         ....more args
-        )\n
+    )\n
     then you can get arg by args.args1, args.args2 ...
     """
     parser = argparse.ArgumentParser(description=description)
@@ -221,10 +221,10 @@ def parserinit(description, *args:dict):
 
 SEP = os.sep
 DESKTOP = desktop_path()
-CURRENTTIME = get_current_time()
-CURRENTWORKDIR = get_runtime_path()
 
 if __name__ == '__main__':
-    daemontool_log = mylogging(branch='DAEMON SAYS')
-    daemontool_log.info('welcome to use daemontool!')
+    with CodeTimer():
+        daemontool_log = mylogging(branch='DAEMON SAYS')
+        daemontool_log.info('welcome to use daemontool!')
+        daemontool_log.info(f'Version: {VERSION}')
 
