@@ -1,0 +1,6 @@
+# .gitignore
+.history/
+.vscode/
+**/__pycache__/
+.daemontool.egg-info/
+.dist/
