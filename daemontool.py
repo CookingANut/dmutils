@@ -224,7 +224,9 @@ DESKTOP = desktop_path()
 CURRENTTIME = get_current_time()
 CURRENTWORKDIR = get_runtime_path()
 
+
 if __name__ == '__main__':
+    
     with CodeTimer():
         daemontool_log = mylogging(branch='DAEMON SAYS')
         daemontool_log.info('welcome to use daemontool!')

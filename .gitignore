@@ -2,5 +2,5 @@
 .history/
 .vscode/
 **/__pycache__/
-.daemontool.egg-info/
-.dist/
+**/daemontool.egg-info/
+**/dist/
