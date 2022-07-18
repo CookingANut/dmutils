@@ -1,7 +1,0 @@
-README.md
-daemontool.py
-setup.py
-daemontool.egg-info/PKG-INFO
-daemontool.egg-info/SOURCES.txt
-daemontool.egg-info/dependency_links.txt
-daemontool.egg-info/top_level.txt
