@@ -1,12 +1,13 @@
 # Author: Daemon Huang
 # Date: 2022/7/12
-# Version: 3.3
+VERSION = '3.4'
 
 # - 2.0: WAR for winreg in linux system
 # - 3.0: add get_path and folder_level_X_path functions
 # - 3.1: update notes for all functions
 # - 3.2: add parserinit function
 # - 3.3: add CodeTimer class
+# - 3.4: add VERSION variable
 
 import os
 import logging
@@ -226,8 +227,6 @@ CURRENTWORKDIR = get_runtime_path()
 
 
 if __name__ == '__main__':
-    
-    with CodeTimer():
-        daemontool_log = mylogging(branch='DAEMON SAYS')
-        daemontool_log.info('welcome to use daemontool!')
+    daemontool_log = mylogging(branch='DAEMON SAYS')
+    daemontool_log.info(f'daemontool - v{VERSION}')
 
