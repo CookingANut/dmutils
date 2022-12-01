@@ -12,14 +12,14 @@ command = os.system
 join = os.path.join
 
 if sys.platform.startswith('win'):
-    rm = 'del /f /s /q '
-    rm_rf = 'rd /s /q '
-    mv = 'move '
+    rm      = 'del /f /s /q '
+    rm_rf   = 'rd /s /q '
+    mv      = 'move '
     install = 'pip3 install '
 else:
-    rm = 'rm '
-    rm_rf = 'rm -rf '
-    mv = 'mv '
+    rm      = 'rm '
+    rm_rf   = 'rm -rf '
+    mv      = 'mv '
     install = 'pip install '
 
 
@@ -32,6 +32,9 @@ class LibMaker():
         self.setup_path = join(os.getcwd(), 'setup.py')
         self.dist_path = join(os.getcwd(), 'dist')
         self.egg_path = join(os.getcwd(), 'daemontool.egg-info')
+
+    def __call__(self):
+        self.auto_build()
 
     def create_setup(self):
         """create temp setup.py"""
@@ -85,8 +88,7 @@ class LibMaker():
         command(f'{install}"./{lib_name}"')
 
 if __name__ == '__main__':
-    LibMaker().auto_build()
-    # LibMaker.installation()
+    LibMaker()()
 
 
 

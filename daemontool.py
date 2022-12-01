@@ -1,6 +1,6 @@
 # Author: Daemon Huang
-# Date: 2022/7/12
-VERSION = '3.4'
+# Date: 2022/12/1
+VERSION = '3.5'
 
 # - 2.0: WAR for winreg in linux system
 # - 3.0: add get_path and folder_level_X_path functions
@@ -8,6 +8,7 @@ VERSION = '3.4'
 # - 3.2: add parserinit function
 # - 3.3: add CodeTimer class
 # - 3.4: add VERSION variable
+# - 3.5: add zipreader and update mylogging for saving log
 
 import os
 import logging
@@ -17,6 +18,8 @@ import json
 if platform.system() == "Windows":
     import winreg
 import argparse
+from datetime import datetime as dt
+import zipfile
 
 
 def desktop_path():
@@ -86,10 +89,16 @@ def __logorder__(func):
     """A wrapper for mylogging"""
     def wrapper(self, msg):
         if self.showlog:
-            if self.branch:
-                getattr(logging, func.__name__)(msg=f"[{self.branch}] - {msg}")
+            if not self.savelog:
+                if self.branch:
+                    getattr(logging, func.__name__)(msg=f"[{self.branch}] - {msg}")
+                else:
+                    getattr(logging, func.__name__)(msg=f" {msg}")
             else:
-                getattr(logging, func.__name__)(msg=f" {msg}")
+                if self.branch:
+                    getattr(self.logger, func.__name__)(msg=f"[{self.branch}] - {msg}")
+                else:
+                    getattr(self.logger, func.__name__)(msg=f" {msg}")
         else:
             pass
         return func(self, msg)
@@ -107,16 +116,35 @@ class mylogging():
     """
 
     level_relation = {
-        'debug': logging.DEBUG,
-        'info': logging.INFO,
+        'debug'  : logging.DEBUG,
+        'info'   : logging.INFO,
         'warning': logging.WARNING,
-        'error': logging.ERROR
+        'error'  : logging.ERROR
     }
 
-    def __init__(self, branch=None, llevel='debug', showlog=True):
+    format = '%(asctime)s [%(levelname)s]%(message)s'
+
+    def __init__(self, branch=None, llevel='debug', showlog=True, savelog=None):
         self.showlog = showlog
         self.branch = branch
-        logging.basicConfig(level=self.level_relation[llevel],format='%(asctime)s [%(levelname)s]%(message)s')
+        self.savelog = savelog
+
+        if not savelog:
+            logging.basicConfig(level=self.level_relation[llevel], format=self.format)
+        else:
+            os.remove(savelog)
+            fh = logging.FileHandler(savelog)
+            sh = logging.StreamHandler()
+            ft = logging.Formatter(self.format)
+            fh.setLevel(self.level_relation[llevel])
+            sh.setLevel(self.level_relation[llevel])
+            fh.setFormatter(ft)
+            sh.setFormatter(ft)
+
+            self.logger = logging.getLogger()
+            self.logger.setLevel(self.level_relation[llevel])
+            self.logger.addHandler(fh)
+            self.logger.addHandler(sh)
 
     @__logorder__
     def info(self, msg):
@@ -134,6 +162,10 @@ class mylogging():
     def error(self, msg):
         pass
 
+    @__logorder__
+    def exception(self, msg):
+        pass
+
 
 def timethis(func):
     """A wrapper for counting functions time spent"""
@@ -149,11 +181,11 @@ def timethis(func):
 class CodeTimer(object):
     """
     Class for counting functions time spent\n
-    use: \n
+    use:
     with CodeTimer():
-        code line\n
-        code line\n
-        ...\n
+        code line;
+        code line;
+        ...
     """
     def __init__(self, keep_num=3):
         self.start = time.time()
@@ -197,18 +229,11 @@ def parserinit(description, *args:dict):
     """
     add arguments for scripts
     use:
-        args = parserinit(\n
-        'Script description',\n
-        {
-            'param': '-arg1',
-            'help': 'help1'
-        },\n
-        {
-            'param': '-arg2',
-            'help': 'help2'
-        },
-        ....more args
-        )\n
+        args = parserinit(
+        'Script description there',
+        {'param': '-arg1', 'help': 'help1'},
+        {'param': '-arg2', 'help': 'help2'},
+        ....)
     then you can get arg by args.args1, args.args2 ...
     """
     parser = argparse.ArgumentParser(description=description)
@@ -219,14 +244,65 @@ def parserinit(description, *args:dict):
             raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")
     return parser.parse_args()
 
+def gettime(datestring, onlyweek=False, onlyyear=False):
+    """
+    Get date format
 
-SEP = os.sep
-DESKTOP = desktop_path()
-CURRENTTIME = get_current_time()
-CURRENTWORKDIR = get_runtime_path()
+    Args:
+        datestring (string): example, 20220928
+        onlyweek (bool, optional):  return 39, Defaults to False.
+        onlyyear (bool, optional):  return 2022 to False.
+
+    Returns:
+        "2022W39", (default)
+    """
+    FormatDateString = dt.strptime(datestring,"%Y%m%d")
+    DateInformation = FormatDateString.isocalendar()
+    year = DateInformation[0]
+    week = DateInformation[1]
+
+    if onlyweek == False and onlyyear == False:
+        return f"{year}W{week}"
+    elif onlyweek == True and onlyyear == False:
+        return int(week)
+    elif onlyweek == False and onlyyear == True:
+        return int(year)
+    else:
+        print("can't make onlyweek and onlyyear all true!")
+        return 0
+
+class zipreader(object):
+    """
+    zipreader
+    open a zip and return a file content
+    use:
+    with zipreader(zippath, filekeyword) as z:
+        print(z) 
+        z is content list now
+    """
+    def __init__(self, zippath, filekeyword):
+        with zipfile.ZipFile(zippath, "r") as z:
+            for zipfile_path in z.namelist():
+                if filekeyword in zipfile_path:
+                    with z.open(zipfile_path, 'r') as file:
+                        self.content = list(map(lambda x: x.decode(), file.readlines()))
+
+    def __enter__(self):
+        return self.content
+
+    def __exit__(self, *_):
+        pass
+
+SEP            =  os.sep
+DESKTOP        =  desktop_path()
+CURRENTTIME    =  get_current_time()
+CURRENTWORKDIR =  get_runtime_path()
+CURRENTYEAR    =  int(dt.now().isocalendar()[0])
+CURRENTWEEK    =  int(dt.now().isocalendar()[1])
 
 
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info(f'daemontool - v{VERSION}')
+
 
