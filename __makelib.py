@@ -1,15 +1,15 @@
 # Description: scirpt for auto make one file python library
 # Author: Daemon Huang
-# Date: 2022/07/19
+# Date: 2022/12/1
 
 import os
 import sys
 from daemontool import VERSION
-# 'pip install wheel' if you find command abnormal
-# 'python -m pip install --upgrade pip' update pip(optional)
 
-command = os.system
-join = os.path.join
+
+command =  os.system
+join    =  os.path.join
+uppip   = 'python -m pip install --upgrade pip'
 
 if sys.platform.startswith('win'):
     rm      = 'del /f /s /q '
@@ -27,11 +27,10 @@ class LibMaker():
     """
     auto make one library file
     """
-
     def __init__(self):
         self.setup_path = join(os.getcwd(), 'setup.py')
-        self.dist_path = join(os.getcwd(), 'dist')
-        self.egg_path = join(os.getcwd(), 'daemontool.egg-info')
+        self.dist_path  = join(os.getcwd(), 'dist')
+        self.egg_path   = join(os.getcwd(), 'daemontool.egg-info')
 
     def __call__(self):
         self.auto_build()
@@ -60,6 +59,8 @@ class LibMaker():
 
     def make_lib(self):
         """make lib"""
+        command(f'{install} wheel')
+        command(f'{uppip}')
         command(f'python "{self.setup_path}" sdist')
         command(f'{rm}"{self.setup_path}"') # remove temp setup.py
         command(f'{rm_rf}"{self.egg_path}"') # remove egg-info folder
