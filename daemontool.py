@@ -1,14 +1,4 @@
-# Author: Daemon Huang
-# Date: 2022/12/1
 VERSION = '3.5'
-
-# - 2.0: WAR for winreg in linux system
-# - 3.0: add get_path and folder_level_X_path functions
-# - 3.1: update notes for all functions
-# - 3.2: add parserinit function
-# - 3.3: add CodeTimer class
-# - 3.4: add VERSION variable
-# - 3.5: add zipreader and update mylogging for saving log
 
 import os
 import logging
@@ -275,9 +265,13 @@ class zipreader(object):
     """
     zipreader
     open a zip and return a file content
+
+    args:
+        zippath is the path of the zip file
+        filekeyword is the file path in the zip you want to open
+
     use:
-    with zipreader(zippath, filekeyword) as z:
-        print(z) 
+        with zipreader(zippath, filekeyword) as z:
         z is content list now
     """
     def __init__(self, zippath, filekeyword):

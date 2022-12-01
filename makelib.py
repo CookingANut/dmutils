@@ -1,7 +1,3 @@
-# Description: scirpt for auto make one file python library
-# Author: Daemon Huang
-# Date: 2022/12/1
-
 import os
 import sys
 from daemontool import VERSION
