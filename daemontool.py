@@ -1,4 +1,4 @@
-VERSION = '3.5'
+VERSION = '3.6'
 
 import os
 import logging
@@ -10,6 +10,7 @@ if platform.system() == "Windows":
 import argparse
 from datetime import datetime as dt
 import zipfile
+from contextlib import contextmanager
 
 
 def desktop_path():
@@ -286,6 +287,30 @@ class zipreader(object):
 
     def __exit__(self, *_):
         pass
+
+class DateTransformer():
+    """
+    Date string transformation
+    """
+    def __init__(self, datestring):
+        datestring = datestring.replace('-','')
+        _FormatDateString = dt.strptime(datestring,"%Y%m%d")
+        _DateInformation = _FormatDateString.isocalendar()
+        
+        self.year        = int(_DateInformation[0])
+        self.week        = int(_DateInformation[1])
+        self.month       = int(_FormatDateString.month)
+        self.quarter     = int(self.month // 4 + 1)
+        self.yearweek    = f"{self.year}W{self.week}"
+        self.yearmonth   = f"{self.year}M{self.month}"
+        self.yearquarter = f"{self.year}Q{self.quarter}"
+
+@contextmanager
+def ignored(exception=Exception, func=lambda:None, **kwargs):
+  try:
+    yield
+  except exception:
+    func(**kwargs)
 
 SEP            =  os.sep
 DESKTOP        =  desktop_path()
