@@ -1,4 +1,4 @@
-VERSION = '3.6'
+VERSION = '3.61'
 
 import os
 import logging
@@ -11,6 +11,7 @@ import argparse
 from datetime import datetime as dt
 import zipfile
 from contextlib import contextmanager
+import subprocess
 
 
 def desktop_path():
@@ -311,6 +312,11 @@ def ignored(exception=Exception, func=lambda:None, **kwargs):
     yield
   except exception:
     func(**kwargs)
+
+def win_resonse(cmd):
+    sub = subprocess.Popen(f"{cmd}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+    out, err = sub.communicate()
+    return out, err
 
 SEP            =  os.sep
 DESKTOP        =  desktop_path()
