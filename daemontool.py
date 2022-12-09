@@ -1,4 +1,4 @@
-VERSION = '3.61'
+VERSION = '3.7'
 
 import os
 import logging
@@ -12,6 +12,8 @@ from datetime import datetime as dt
 import zipfile
 from contextlib import contextmanager
 import subprocess
+import openpyxl
+from openpyxl.styles import Border, Side, colors, Font, PatternFill, Alignment
 
 
 def desktop_path():
@@ -23,11 +25,31 @@ def desktop_path():
         return "/home/"
 
 
+def win_resonse(cmd):
+    "get windows system command response, and run command in background"
+    sub = subprocess.Popen(f"{cmd}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+    out, err = sub.communicate()
+    return out, err
+
+
 def get_path(path):
     """generate all abs path under the given path"""
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             yield os.path.join(dirname, filename)
+
+
+def get_all_path(rootdir):
+    """return all files abs paths in the given directory"""
+    path_list = []
+    all_list = os.listdir(rootdir)
+    for i in range(len(all_list)):
+        com_path = os.path.join(rootdir, all_list[i])
+        if os.path.isfile(com_path):
+            path_list.append(com_path)
+        if os.path.isdir(com_path):
+            path_list.extend(get_all_path(com_path))
+    return path_list
 
 
 def folder_level_X_path(path, level=3):
@@ -43,19 +65,6 @@ def folder_level_X_path(path, level=3):
             path_list.append(com_path)
         else:
             path_list.extend(folder_level_X_path(com_path, level=level-1))
-    return path_list
-
-
-def get_all_path(rootdir):
-    """return all files abs paths in the given directory"""
-    path_list = []
-    all_list = os.listdir(rootdir)
-    for i in range(len(all_list)):
-        com_path = os.path.join(rootdir, all_list[i])
-        if os.path.isfile(com_path):
-            path_list.append(com_path)
-        if os.path.isdir(com_path):
-            path_list.extend(get_all_path(com_path))
     return path_list
 
 
@@ -236,32 +245,6 @@ def parserinit(description, *args:dict):
             raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")
     return parser.parse_args()
 
-def gettime(datestring, onlyweek=False, onlyyear=False):
-    """
-    Get date format
-
-    Args:
-        datestring (string): example, 20220928
-        onlyweek (bool, optional):  return 39, Defaults to False.
-        onlyyear (bool, optional):  return 2022 to False.
-
-    Returns:
-        "2022W39", (default)
-    """
-    FormatDateString = dt.strptime(datestring,"%Y%m%d")
-    DateInformation = FormatDateString.isocalendar()
-    year = DateInformation[0]
-    week = DateInformation[1]
-
-    if onlyweek == False and onlyyear == False:
-        return f"{year}W{week}"
-    elif onlyweek == True and onlyyear == False:
-        return int(week)
-    elif onlyweek == False and onlyyear == True:
-        return int(year)
-    else:
-        print("can't make onlyweek and onlyyear all true!")
-        return 0
 
 class zipreader(object):
     """
@@ -289,6 +272,7 @@ class zipreader(object):
     def __exit__(self, *_):
         pass
 
+
 class DateTransformer():
     """
     Date string transformation
@@ -306,17 +290,119 @@ class DateTransformer():
         self.yearmonth   = f"{self.year}M{self.month}"
         self.yearquarter = f"{self.year}Q{self.quarter}"
 
+
 @contextmanager
 def ignored(exception=Exception, func=lambda:None, **kwargs):
-  try:
-    yield
-  except exception:
-    func(**kwargs)
+    """
+    Use: 
+    with ignored(func = func, **kwargs):
+        xx 
+    same as 
+    try: 
+        xx 
+    except Exception
+        func
+    """
+    try:
+        yield
+    except exception:
+        func(**kwargs)
 
-def win_resonse(cmd):
-    sub = subprocess.Popen(f"{cmd}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
-    out, err = sub.communicate()
-    return out, err
+
+class xlsxDesigner():
+    """
+    for openpyxl only
+    """
+
+    sggcolor = {
+        'blue angel' : 'B7CEEC',
+        'magic mint' : 'AAF0D1',
+        'cream white': 'FFFDD0',
+        'peach pink' : 'F98B88',
+        'periwinkle' : 'CCCCFF'
+    }
+
+    def __init__(self, bgcolor="blue angel", hz="left", fontsize='16'):
+        self.titles = []
+
+        self.border = Border(
+            top    = Side(border_style='thin', color=colors.BLACK),
+            bottom = Side(border_style='thin', color=colors.BLACK),
+            left   = Side(border_style='thin', color=colors.BLACK),
+            right  = Side(border_style='thin', color=colors.BLACK)
+        )
+
+        self.font = Font('Candara Light',size=fontsize)
+        
+        try:
+            self.fill = PatternFill('solid', fgColor=self.sggcolor(bgcolor)) 
+        except KeyError:
+            self.fill = PatternFill('solid', fgColor=bgcolor)
+        else:
+            self.fill = PatternFill('solid', fgColor='B7CEEC')
+
+        self.alignment = Alignment(horizontal=hz,vertical='center') # left, general, right, center
+
+
+class xlsxMaker():
+
+    def __init__(self):
+        self.wb = openpyxl.Workbook()
+        self.wb.remove(self.wb['Sheet'])
+
+    def create_sheet(self, sheetname='undefine'):
+        return self.wb.create_sheet(sheetname)
+
+    def get_num_colnum_dict(self):
+        num_str_dict = {}
+        A_Z = [chr(a) for a in range(ord('A'), ord('Z') + 1)]
+        AA_AZ = ['A' + chr(a) for a in range(ord('A'), ord('Z') + 1)]
+        A_AZ = A_Z + AA_AZ
+        for i in A_AZ:
+            num_str_dict[A_AZ.index(i) + 1] = i
+        return num_str_dict
+
+    def auto_fit_width(self, excel_name:str, sheet_name:str):
+        wb = openpyxl.load_workbook(excel_name)
+        sheet = wb[sheet_name]
+        max_column = sheet.max_column
+        max_row = sheet.max_row
+        max_column_dict = {}
+        num_str_dict = self.get_num_colnum_dict()
+        for i in range(1, max_column + 1):
+            for j in range(1, max_row + 1):
+                column = 0
+                sheet_value = sheet.cell(row=j, column=i).value
+                sheet_value_list = [k for k in str(sheet_value)]
+                for v in sheet_value_list:
+                    if v.isdigit() == True or v.isalpha() == True:
+                        column += 1.1
+                    else:
+                        column += 2.2
+                try:
+                    if column > max_column_dict[i]:
+                        max_column_dict[i] = column
+                except Exception as e:
+                    max_column_dict[i] = column
+        for key, value in max_column_dict.items():
+            sheet.column_dimensions[num_str_dict[key]].width = value + 2
+        wb.save(excel_name)
+
+    def wirte2cell(self, sheet, design, row, column, value, fill=False):
+        sheet.cell(row=row, column=column).value       = value
+        sheet.cell(row=row, column=column).border      = design.border
+        sheet.cell(row=row, column=column).font        = design.font
+        sheet.cell(row=row, column=column).alignment   = design.alignment
+        if fill:
+            sheet.cell(row=row, column=column).fill   = design.fill
+    
+    def write2mergecell(self, sheet, design, start_row, end_row, start_column, end_column, value, fill=False):
+        self.wirtecell(sheet, design, start_row, start_column, value, fill)
+        sheet.merge_cells(start_row=start_row, start_column=start_column, end_row=end_row, end_column=end_column)
+    
+    def save(self, xlsxpath, xlsxname):
+        self.wb.save(f"{xlsxpath}{SEP}{xlsxname}.xlsx")
+        
 
 SEP            =  os.sep
 DESKTOP        =  desktop_path()
