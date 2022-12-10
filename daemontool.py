@@ -323,7 +323,6 @@ class xlsxDesigner():
     }
 
     def __init__(self, bgcolor="blue angel", hz="left", fontsize='16'):
-        self.titles = []
 
         self.border = Border(
             top    = Side(border_style='thin', color=colors.BLACK),
@@ -331,20 +330,18 @@ class xlsxDesigner():
             left   = Side(border_style='thin', color=colors.BLACK),
             right  = Side(border_style='thin', color=colors.BLACK)
         )
-
         self.font = Font('Candara Light',size=fontsize)
-        
         try:
-            self.fill = PatternFill('solid', fgColor=self.sggcolor(bgcolor)) 
+            self.fill = PatternFill('solid', fgColor=self.sggcolor[bgcolor]) 
         except KeyError:
             self.fill = PatternFill('solid', fgColor=bgcolor)
-        else:
-            self.fill = PatternFill('solid', fgColor='B7CEEC')
-
         self.alignment = Alignment(horizontal=hz,vertical='center') # left, general, right, center
 
 
 class xlsxMaker():
+    """
+    for openpyxl only
+    """
 
     def __init__(self):
         self.wb = openpyxl.Workbook()
@@ -353,7 +350,7 @@ class xlsxMaker():
     def create_sheet(self, sheetname='undefine'):
         return self.wb.create_sheet(sheetname)
 
-    def get_num_colnum_dict(self):
+    def _get_num_colnum_dict(self):
         num_str_dict = {}
         A_Z = [chr(a) for a in range(ord('A'), ord('Z') + 1)]
         AA_AZ = ['A' + chr(a) for a in range(ord('A'), ord('Z') + 1)]
@@ -368,7 +365,7 @@ class xlsxMaker():
         max_column = sheet.max_column
         max_row = sheet.max_row
         max_column_dict = {}
-        num_str_dict = self.get_num_colnum_dict()
+        num_str_dict = self._get_num_colnum_dict()
         for i in range(1, max_column + 1):
             for j in range(1, max_row + 1):
                 column = 0
@@ -397,10 +394,10 @@ class xlsxMaker():
             sheet.cell(row=row, column=column).fill   = design.fill
     
     def write2mergecell(self, sheet, design, start_row, end_row, start_column, end_column, value, fill=False):
-        self.wirtecell(sheet, design, start_row, start_column, value, fill)
+        self.wirte2cell(sheet, design, start_row, start_column, value, fill)
         sheet.merge_cells(start_row=start_row, start_column=start_column, end_row=end_row, end_column=end_column)
     
-    def save(self, xlsxpath, xlsxname):
+    def save(self, xlsxname, xlsxpath):
         self.wb.save(f"{xlsxpath}{SEP}{xlsxname}.xlsx")
         
 
@@ -415,5 +412,3 @@ CURRENTWEEK    =  int(dt.now().isocalendar()[1])
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info(f'daemontool - v{VERSION}')
-
-
