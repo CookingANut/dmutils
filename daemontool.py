@@ -1,4 +1,4 @@
-VERSION = '3.7'
+VERSION = '3.71'
 
 import os
 import logging
@@ -26,7 +26,7 @@ def desktop_path():
 
 
 def win_resonse(cmd):
-    "get windows system command response, and run command in background"
+    """get windows system command response, and run command in background"""
     sub = subprocess.Popen(f"{cmd}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
     out, err = sub.communicate()
     return out, err
@@ -311,18 +311,18 @@ def ignored(exception=Exception, func=lambda:None, **kwargs):
 
 class xlsxDesigner():
     """
-    for openpyxl only
+    Generate an openpyxl type xlsx design
     """
 
     sggcolor = {
-        'blue angel' : 'B7CEEC',
-        'magic mint' : 'AAF0D1',
-        'cream white': 'FFFDD0',
-        'peach pink' : 'F98B88',
-        'periwinkle' : 'CCCCFF'
+        'BlueAngel'  : 'B7CEEC',
+        'MagicMint'  : 'AAF0D1',
+        'CreamWhite' : 'FFFDD0',
+        'PeachPink'  : 'F98B88',
+        'PeriWinkle' : 'CCCCFF'
     }
 
-    def __init__(self, bgcolor="blue angel", hz="left", fontsize='16'):
+    def __init__(self, bgcolor="BlueAngel", hzalign="left", font='Candara Light', fontsize='14', fontbold=False):
 
         self.border = Border(
             top    = Side(border_style='thin', color=colors.BLACK),
@@ -330,17 +330,17 @@ class xlsxDesigner():
             left   = Side(border_style='thin', color=colors.BLACK),
             right  = Side(border_style='thin', color=colors.BLACK)
         )
-        self.font = Font('Candara Light',size=fontsize)
+        self.font = Font(font, size=fontsize, bold=fontbold)
         try:
             self.fill = PatternFill('solid', fgColor=self.sggcolor[bgcolor]) 
         except KeyError:
             self.fill = PatternFill('solid', fgColor=bgcolor)
-        self.alignment = Alignment(horizontal=hz,vertical='center') # left, general, right, center
+        self.alignment = Alignment(horizontal=hzalign, vertical='center') # left, general, right, center
 
 
 class xlsxMaker():
     """
-    for openpyxl only
+    A class for making a xlsx file with openpyxl extension
     """
 
     def __init__(self):
@@ -397,12 +397,16 @@ class xlsxMaker():
         self.wirte2cell(sheet, design, start_row, start_column, value, fill)
         sheet.merge_cells(start_row=start_row, start_column=start_column, end_row=end_row, end_column=end_column)
     
-    def save(self, xlsxname, xlsxpath):
+    def save(self, xlsxname, xlsxpath, allautowidth=True):
         self.wb.save(f"{xlsxpath}{SEP}{xlsxname}.xlsx")
+        if allautowidth:
+            for sheet in self.wb.sheetnames:
+                self.auto_fit_width(excel_name=f"{xlsxpath}{SEP}{xlsxname}.xlsx", sheet_name=sheet)
+
         
 
 SEP            =  os.sep
-DESKTOP        =  desktop_path()
+DESKTOPPATH    =  desktop_path()
 CURRENTTIME    =  get_current_time()
 CURRENTWORKDIR =  get_runtime_path()
 CURRENTYEAR    =  int(dt.now().isocalendar()[0])
@@ -412,3 +416,4 @@ CURRENTWEEK    =  int(dt.now().isocalendar()[1])
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info(f'daemontool - v{VERSION}')
+
