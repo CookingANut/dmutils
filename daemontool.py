@@ -1,4 +1,4 @@
-VERSION = '3.71'
+VERSION = '3.72'
 
 import os
 import logging
@@ -289,6 +289,7 @@ class DateTransformer():
         self.yearweek    = f"{self.year}W{self.week}"
         self.yearmonth   = f"{self.year}M{self.month}"
         self.yearquarter = f"{self.year}Q{self.quarter}"
+        self.timestamp   = int(time.mktime(time.strptime(datestring,"%Y%m%d")))
 
 
 @contextmanager
@@ -416,4 +417,5 @@ CURRENTWEEK    =  int(dt.now().isocalendar()[1])
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON SAYS')
     daemontool_log.info(f'daemontool - v{VERSION}')
+
 
