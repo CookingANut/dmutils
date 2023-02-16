@@ -42,7 +42,7 @@ class LibMaker():
             writecode("    author='Daemon Huang',")
             writecode("    author_email='morningrocks@outlook.com',")
             writecode("    url='',")
-            writecode("    install_requires=[],")
+            writecode("    install_requires=['tqdm','argparse','openpyxl'],")
             writecode("    python_requires='>=3',")
             writecode("    py_modules=['daemontool'],")
             writecode(")")

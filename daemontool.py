@@ -1,4 +1,4 @@
-VERSION = '3.76'
+VERSION = '3.78'
 
 import os
 import logging
@@ -15,6 +15,9 @@ from contextlib import contextmanager
 import subprocess
 import openpyxl
 from openpyxl.styles import Border, Side, colors, Font, PatternFill, Alignment
+import tqdm
+import threading
+import functools
 
 
 BATHEADER = """
@@ -1103,6 +1106,80 @@ class Py2BAT():
                     batch.writelines(codes)
 
 
+def _progress_bar(function, estimated_time, tstep=0.2, progress_name='', tqdm_kwargs={}, args=[], kwargs={}):
+    """Tqdm wrapper for a long-running function
+        >>> args:
+            function       - function to run
+            estimated_time - how long you expect the function to take
+            tstep          - time delta (seconds) for progress bar updates
+            tqdm_kwargs    - kwargs to construct the progress bar
+            args           - args to pass to the function
+            kwargs         - keyword args to pass to the function
+        
+        ret:
+            function(*args, **kwargs)
+        
+        >>> example:
+                test = _progress_bar(
+                    running_function,
+                    estimated_time=5, 
+                    tstep=1/5.0,
+                    tqdm_kwargs={"bar_format":"{desc}{percentage:3.1f}%|{bar:25}|"},
+                    args=(1, "foo"), 
+                    kwargs={"spam":"eggs"}
+                    )
+    """
+    ret = [None]  # Mutable var so the function can store its return value
+    
+    def runner(function, ret, *args, **kwargs):
+        ret[0] = function(*args, **kwargs)
+
+    thread = threading.Thread(target=runner, args=(function, ret) + tuple(args), kwargs=kwargs)
+    pbar = tqdm.tqdm(total=estimated_time,**tqdm_kwargs)
+    pbar.set_description(progress_name)
+    actuall_time = 0
+    thread.start()
+
+    while thread.is_alive():
+        thread.join(timeout=tstep)
+        if actuall_time < estimated_time:
+            pbar.update(tstep)
+            actuall_time += tstep
+        # for actual running time are longer than estimated_time
+        if actuall_time + tstep > estimated_time:
+            tstep = estimated_time - actuall_time
+            pbar.update(tstep)
+            actuall_time += tstep
+    
+    # for actual function running time is shorter than estimated_time
+    while(actuall_time < estimated_time):
+        if actuall_time + tstep > estimated_time:
+            tstep = estimated_time - actuall_time
+        pbar.update(tstep)
+        actuall_time += tstep
+
+    pbar.close()
+    return ret[0]
+
+
+def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_format":"{desc}{percentage:3.0f}%|{bar:25}|"}):
+    """
+        Decorate a function to add a progress bar
+
+        >>> example:
+            @progress_wrapped(estimated_time=8, tstep=0.2, progress_name='test')
+            def arunning_function(*args, **kwargs):
+                pass
+    """
+    # back up: tqdm_kwargs={"bar_format":"{desc}: {percentage:3.0f}%|{bar:25}| {n:.1f}/{total:.1f} [{elapsed}<{remaining}]"}
+    def real_decorator(function):
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            return _progress_bar(function, estimated_time=estimated_time, tstep=tstep, progress_name=progress_name, tqdm_kwargs=tqdm_kwargs, args=args, kwargs=kwargs)
+        return wrapper
+    return real_decorator
+
+
 SEP            =  os.sep
 DESKTOPPATH    =  desktop_path()
 CURRENTTIME    =  get_current_time()
@@ -1123,6 +1200,14 @@ def GV_list():
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON_LOGGING')
     daemontool_log.info(f'daemontool - v{VERSION}')
+
+    GV_list()
+    
+    @progressbar(estimated_time=5, tstep=0.01, progress_name='daemontool_test')
+    def daemontool_test():
+        time.sleep(3)
+
+    daemontool_test()
 
 
 
