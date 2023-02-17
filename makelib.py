@@ -1,6 +1,6 @@
 import os
 import sys
-from daemontool import VERSION
+from daemontool import __version__
 
 
 command =  os.system
@@ -38,7 +38,7 @@ class LibMaker():
             writecode("from setuptools import setup")
             writecode("setup(")
             writecode("    name='daemontool',")
-            writecode("    version='{}',".format(VERSION))
+            writecode("    version='{}',".format(__version__))
             writecode("    author='Daemon Huang',")
             writecode("    author_email='morningrocks@outlook.com',")
             writecode("    url='',")

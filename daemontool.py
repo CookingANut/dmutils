@@ -1,4 +1,4 @@
-VERSION = '3.78'
+__version__ = '4.0'
 
 import os
 import logging
@@ -1106,7 +1106,7 @@ class Py2BAT():
                     batch.writelines(codes)
 
 
-def _progress_bar(function, estimated_time, tstep=0.2, progress_name='', tqdm_kwargs={}, args=[], kwargs={}):
+def _progress_bar(function, estimated_time, tstep, progress_name, tqdm_kwargs={}, args=[], kwargs={}):
     """Tqdm wrapper for a long-running function
         >>> args:
             function       - function to run
@@ -1130,13 +1130,27 @@ def _progress_bar(function, estimated_time, tstep=0.2, progress_name='', tqdm_kw
                     )
     """
     ret = [None]  # Mutable var so the function can store its return value
-    
-    def runner(function, ret, *args, **kwargs):
-        ret[0] = function(*args, **kwargs)
-
-    thread = threading.Thread(target=runner, args=(function, ret) + tuple(args), kwargs=kwargs)
     pbar = tqdm.tqdm(total=estimated_time,**tqdm_kwargs)
     pbar.set_description(progress_name)
+
+
+    def return_save(function, ret, *args, **kwargs):
+        ret[0] = function(*args, **kwargs)
+    
+    class _progress_bar_build_in_print():
+        @staticmethod
+        def print_with_bar(msg):
+            pbar.bar_format = tqdm_kwargs["bar_format"] + msg
+        @staticmethod
+        def print_in_line(msg):
+            pbar.write(msg)
+        print = print_with_bar
+        write = print_in_line
+
+    if '_progress_bar' in kwargs.keys():
+        kwargs['_progress_bar'] = _progress_bar_build_in_print
+
+    thread = threading.Thread(target=return_save, args=(function, ret) + tuple(args), kwargs=kwargs)
     actuall_time = 0
     thread.start()
 
@@ -1170,6 +1184,36 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
             @progress_wrapped(estimated_time=8, tstep=0.2, progress_name='test')
             def arunning_function(*args, **kwargs):
                 pass
+            
+            there provide a build in bar-print-function if your fucntion have a "_progress_bar" parameter
+
+            your can assign _progress_bar to anthing
+
+            it will be redirected to build in bar-print-function
+
+            then you can use 
+            _progress_bar.print_with_bar(message)(or _progress_bar.print): 
+                    print message with bar
+
+            _progress_bar.print_in_line(message)(or _progress_bat.write) : 
+                    print message in another line but keep progress bar moving
+        
+        >>> example:
+                class A():
+                    @staticmethod
+                    @progressbar(estimated_time=8, tstep=0.1, progress_name='this is a test')
+                    def test_print(_progeress_bar):
+                        import time
+                        _progeress_bar.print("test1")
+                        _progeress_bar.write("test1")
+                        time.sleep(2)
+                        _progeress_bar.print_with_bar("test2")
+                        _progeress_bar.print_in_line("test2")
+                        time.sleep(2)
+                        _progeress_bar.print_with_bar("test3")
+                        _progeress_bar.print_in_line("test3")
+                test_bar = None
+                A.test_print(_progeress_bar=test_bar)
     """
     # back up: tqdm_kwargs={"bar_format":"{desc}: {percentage:3.0f}%|{bar:25}| {n:.1f}/{total:.1f} [{elapsed}<{remaining}]"}
     def real_decorator(function):
@@ -1199,15 +1243,4 @@ def GV_list():
 
 if __name__ == '__main__':
     daemontool_log = mylogging(branch='DAEMON_LOGGING')
-    daemontool_log.info(f'daemontool - v{VERSION}')
-
-    GV_list()
-    
-    @progressbar(estimated_time=5, tstep=0.01, progress_name='daemontool_test')
-    def daemontool_test():
-        time.sleep(3)
-
-    daemontool_test()
-
-
-
+    daemontool_log.info(f'daemontool - v{__version__}')
