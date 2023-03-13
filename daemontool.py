@@ -1,4 +1,4 @@
-__version__ = '4.0'
+__version__ = '4.1.0'
 
 import os
 import logging
@@ -1202,18 +1202,18 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
                 class A():
                     @staticmethod
                     @progressbar(estimated_time=8, tstep=0.1, progress_name='this is a test')
-                    def test_print(_progeress_bar):
+                    def test_print(_progress_bar):
                         import time
-                        _progeress_bar.print("test1")
-                        _progeress_bar.write("test1")
+                        _progress_bar.print("test1")
+                        _progress_bar.write("test1")
                         time.sleep(2)
-                        _progeress_bar.print_with_bar("test2")
-                        _progeress_bar.print_in_line("test2")
+                        _progress_bar.print_with_bar("test2")
+                        _progress_bar.print_in_line("test2")
                         time.sleep(2)
-                        _progeress_bar.print_with_bar("test3")
-                        _progeress_bar.print_in_line("test3")
+                        _progress_bar.print_with_bar("test3")
+                        _progress_bar.print_in_line("test3")
                 test_bar = None
-                A.test_print(_progeress_bar=test_bar)
+                A.test_print(_progress_bar=test_bar)
     """
     # back up: tqdm_kwargs={"bar_format":"{desc}: {percentage:3.0f}%|{bar:25}| {n:.1f}/{total:.1f} [{elapsed}<{remaining}]"}
     def real_decorator(function):

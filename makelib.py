@@ -67,9 +67,9 @@ class LibMaker():
         lib_name = os.listdir(self.dist_path)[0]
         command(f'{mv}"{lib_path}" .') # move lib to workspace
         command(f'{rm_rf}"{self.dist_path}"') # remove dist folder
-        need_install = input('Do you need install it now? y/n ')
-        if need_install == 'y':
-            command(f'{install}"./{lib_name}"')
+        # need_install = input('Do you need install it now? y/n ')
+        # if need_install == 'y':
+        command(f'{install}"./{lib_name}"')
 
     def auto_build(self):
         """auto run sequence"""
