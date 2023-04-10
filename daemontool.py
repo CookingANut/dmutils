@@ -1,11 +1,12 @@
-__version__ = '4.1.0'
+__version__ = '4.1.1'
 
 import os
 import logging
 import platform
 import time
 import json
-if platform.system() == "Windows":
+SYSTEM = platform.system()
+if SYSTEM == "Windows":
     import winreg
 import argparse
 from datetime import datetime as dt
@@ -613,18 +614,30 @@ Options:
 
 def desktop_path():
     """return your desktop path"""
-    if platform.system() == "Windows":
+    if SYSTEM == "Windows":
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
         return winreg.QueryValueEx(key, "Desktop")[0]
     else:
         return "/home/"
 
 
-def win_resonse(cmd):
-    """get windows system command response, and run command in background"""
-    sub = subprocess.Popen(f"{cmd}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+def win_command(command):
+    """get windows command response"""
+    sub = subprocess.Popen(f"{command}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
     out, err = sub.communicate()
     return out, err
+
+
+def bash_command(command):
+    """get linux bash command response"""
+    response = []
+    p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    for line in iter(p.stdout.readline, b''):
+        line = line.decode().strip()
+        if line:
+            response.append(line)
+            print(line)
+    return response
 
 
 def get_path(path):
@@ -1062,17 +1075,22 @@ class NuitkaMake():
             nm.MAKE()
     """
     def __init__(self, main):
-      self.command = 'python -m nuitka'
-      self.main = main
+        if SYSTEM == 'Windows':
+            self.command = 'python -m nuitka'
+        elif SYSTEM == 'Linux':
+            self.command = 'python3 -m nuitka'
+        else:
+            raise TypeError('Unsupported system')
+        self.main = main
 
     def ADD_ARG(self, arg):
-      self.command = self.command.replace(f' {self.main}', '')
-      self.command = f'{self.command} --{arg} {self.main}'
-      print(f'Adding arg: --{arg}')
+        self.command = self.command.replace(f' {self.main}', '')
+        self.command = f'{self.command} --{arg} {self.main}'
+        print(f'Adding arg: --{arg}')
 
     def MAKE(self):
-       print("Nuitka building start ...")
-       with CodeTimer():
+        print("Nuitka building start ...")
+        with CodeTimer():
           os.system(self.command)
     
     def HELP(self):
@@ -1230,6 +1248,7 @@ CURRENTTIME    =  get_current_time()
 CURRENTWORKDIR =  get_runtime_path()
 CURRENTYEAR    =  int(dt.now().isocalendar()[0])
 CURRENTWEEK    =  int(dt.now().isocalendar()[1])
+SYSTEM         =  platform.system()
 
 
 def GV_list():
