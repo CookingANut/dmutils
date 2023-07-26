@@ -1,4 +1,4 @@
-__version__ = '4.1.1'
+__version__ = '4.1.2'
 
 import os
 import logging
@@ -19,6 +19,7 @@ from openpyxl.styles import Border, Side, colors, Font, PatternFill, Alignment
 import tqdm
 import threading
 import functools
+from cryptography.fernet import Fernet
 
 
 BATHEADER = """
@@ -820,8 +821,6 @@ def mkdir(path):
     path = path.strip().rstrip("\\")
     if not os.path.exists(path):
         os.makedirs(path)
-    else:
-        print(f'{path} existed!')
 
 
 def dict2json(target_dict, json_name, json_path):
@@ -838,6 +837,32 @@ def json2dict(json_path):
     """"json to dict"""
     with open(json_path, 'r', encoding='UTF-8') as f:
         return json.load(f)
+    
+
+def json2jsone(json_path: str, jsone_path: str):
+    """ 
+    Encrypt json file 
+    
+    >>> please make sure to send full jsone path(including name) for parameter 
+    """
+    KEY = Fernet.generate_key()
+    FERNET = Fernet(KEY)
+    with open(json_path, encoding='UTF-8') as f:
+        dict_original = json.load(f)
+    dict_original = json.dumps(dict_original).encode()
+    dict_encrypted = FERNET.encrypt(dict_original)
+
+    with open(jsone_path, "wb") as f:
+        f.write(dict_encrypted)
+
+    print(f"Encrypted your json to: {jsone_path}")
+    print(f"Remember copy your Key: {KEY}")
+
+
+def openjsone(jsone_path, key) -> dict:
+    """ Open encrypted json file """
+    with open(jsone_path, "rb") as f:
+        return json.loads(Fernet(key).decrypt(f.read()).decode('utf-8'))
 
 
 def parserinit(description, *args:dict):
@@ -857,6 +882,29 @@ def parserinit(description, *args:dict):
             parser.add_argument(arg['param'], help=arg['help'])
         else:
             raise KeyError("Wrong arguments, arg['param'] and arg['help] must need")
+    return parser.parse_args()
+
+
+def myArgument(description, *args:dict):
+    """
+        add arguments
+        >>> use:
+            args = MyArgument(
+            'Script description there',
+            {'S_arg': '-short_arg1', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
+            {'S_arg': '-short_arg2', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
+            ....)
+        then you can get arg by args.args1, args.args2 ...
+    """
+    parser = argparse.ArgumentParser(description=description)
+    for arg in args:
+        parser.add_argument(
+            arg['S_arg'],
+            arg['F_arg'],
+            type=arg['type'],
+            default=arg['default'],
+            help=arg['help']
+        )
     return parser.parse_args()
 
 
@@ -1241,10 +1289,47 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
         return wrapper
     return real_decorator
 
+def merge_dicts(dict1, dict2):
+    """ merge 2 dicts into 1 """
+    for k in set(dict1) | set(dict2):
+    # for k in set(dict1.keys()).union(dict2.keys()):
+        if k in dict1 and k in dict2:
+            if isinstance(dict1[k], dict) and isinstance(dict2[k], dict):
+                yield (k, dict(merge_dicts(dict1[k], dict2[k])))
+            else:
+                # If one of the values is not a dict, you can't continue merging it.
+                # Value from second dict overrides one in first and we move on.
+                yield (k, dict2[k])
+                # Alternatively, replace this with exception raiser to alert you of value conflicts
+        elif k in dict1:
+            yield (k, dict1[k])
+        else:
+            yield (k, dict2[k])
+
+
+def merge_all_dicts(dict_container:list):
+    """ 
+    merge mutiple dicts into one dict 
+    dict_container is a list, whose elements are all the dicts you want to combine
+    """
+    if len(dict_container) > 1:
+        for idx in range(len(dict_container)):
+            if idx == 0:
+                temp = dict(merge_dicts(dict_container[0], dict_container[1]))
+            elif idx == 1:
+                continue
+            else:
+                temp = dict(merge_dicts(temp, dict_container[idx]))
+        return temp
+    elif len(dict_container) == 1:
+        return dict_container[0]
+    else:
+        return {}
 
 SEP            =  os.sep
 DESKTOPPATH    =  desktop_path()
 CURRENTTIME    =  get_current_time()
+CURRENTDATE    =  CURRENTTIME.split(" ")[0]
 CURRENTWORKDIR =  get_runtime_path()
 CURRENTYEAR    =  int(dt.now().isocalendar()[0])
 CURRENTWEEK    =  int(dt.now().isocalendar()[1])
