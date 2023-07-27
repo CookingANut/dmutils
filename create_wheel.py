@@ -1,6 +1,6 @@
 import os
 import sys
-from daemontool import __version__
+from dmutil import __version__
 
 
 command =  os.system
@@ -19,14 +19,14 @@ else:
     install = 'pip install '
 
 
-class LibMaker():
+class WheelMaker():
     """
     auto make one library file
     """
     def __init__(self):
         self.setup_path = join(os.getcwd(), 'setup.py')
         self.dist_path  = join(os.getcwd(), 'dist')
-        self.egg_path   = join(os.getcwd(), 'daemontool.egg-info')
+        self.egg_path   = join(os.getcwd(), 'dmutil.egg-info')
 
     def __call__(self):
         self.auto_build()
@@ -37,14 +37,14 @@ class LibMaker():
             writecode = lambda code: setup.write(code + '\n')
             writecode("from setuptools import setup")
             writecode("setup(")
-            writecode("    name='daemontool',")
+            writecode("    name='dmutil',")
             writecode("    version='{}',".format(__version__))
             writecode("    author='Daemon Huang',")
             writecode("    author_email='morningrocks@outlook.com',")
             writecode("    url='',")
-            writecode("    install_requires=['tqdm','openpyxl'],")
-            writecode("    python_requires='>=3',")
-            writecode("    py_modules=['daemontool'],")
+            writecode("    install_requires=['tqdm','openpyxl', 'nuitka', 'cryptography'],")
+            writecode("    python_requires='>=3.8',")
+            writecode("    py_modules=['dmutil'],")
             writecode(")")
         print('temp setup.py creation completed!')
 
@@ -85,7 +85,7 @@ class LibMaker():
         command(f'{install}"./{lib_name}"')
 
 if __name__ == '__main__':
-    LibMaker()()
+    WheelMaker()()
 
 
 

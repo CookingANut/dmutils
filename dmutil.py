@@ -1,12 +1,9 @@
-__version__ = '4.1.2'
-
 import os
 import logging
 import platform
 import time
 import json
-SYSTEM = platform.system()
-if SYSTEM == "Windows":
+if (SYSTEM := platform.system()) == "Windows":
     import winreg
 import argparse
 from datetime import datetime as dt
@@ -15,12 +12,21 @@ from io import BytesIO
 from contextlib import contextmanager
 import subprocess
 import openpyxl
-from openpyxl.styles import Border, Side, colors, Font, PatternFill, Alignment
 import tqdm
 import threading
 import functools
 from cryptography.fernet import Fernet
+import traceback
+from openpyxl.styles import (
+    Border,
+    Side,
+    colors,
+    Font,
+    PatternFill,
+    Alignment
+)
 
+__version__ = '4.1.3'
 
 BATHEADER = """
 1>2# : ^
@@ -615,22 +621,55 @@ Options:
 
 def desktop_path():
     """return your desktop path"""
-    if SYSTEM == "Windows":
+    if  SYSTEM == "Windows":
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders')
         return winreg.QueryValueEx(key, "Desktop")[0]
     else:
         return "/home/"
 
 
+def sysc(command, cwd=None):
+    """
+    Combine win_command and bash_command into one unify function
+    - use p.stdout to get output instead of p.communicate to have a real time output
+    - use p.poll() to check if the process is still running or not
+    - return output -> list and return code
+
+    command: str, your running command in system
+    cwd    : str, you commmand running working directory
+    """
+    p = subprocess.Popen(
+        command,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        encoding='utf-8',
+        cwd=cwd
+    )
+    OUT = []
+    while (line := p.stdout.readline()) != '' or (RC := p.poll()) is None:
+        if line:
+            print(line.strip())
+            OUT.append(line.strip())
+
+    return OUT, RC
+
+
 def win_command(command):
-    """get windows command response"""
+    """
+    get windows command response
+    deprecated, please use `sysc` function
+    """
     sub = subprocess.Popen(f"{command}", stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
     out, err = sub.communicate()
     return out, err
 
 
 def bash_command(command):
-    """get linux bash command response"""
+    """
+    get linux bash command response
+    deprecated, please use `sysc` function
+    """
     response = []
     p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for line in iter(p.stdout.readline, b''):
@@ -642,14 +681,14 @@ def bash_command(command):
 
 
 def get_path(path):
-    """generate all abs path under the given path"""
+    """generate all abs path under the given path, return a generator"""
     for dirname, _, filenames in os.walk(path):
         for filename in filenames:
             yield os.path.join(dirname, filename)
 
 
 def get_all_path(rootdir):
-    """return all files abs paths in the given directory"""
+    """return all files abs paths in the given directory, return a list"""
     path_list = []
     all_list = os.listdir(rootdir)
     for i in range(len(all_list)):
@@ -696,7 +735,7 @@ def get_current_time(format="%Y-%m-%d %H:%M:%S"):
 
 
 def __logorder__(func):
-    """A wrapper for mylogging"""
+    """build in wrapper for mylogging, user do not use"""
     def wrapper(self, msg):
         if self.showlog:
             if not self.savelog:
@@ -717,18 +756,18 @@ def __logorder__(func):
 
 class mylogging():
     """
-        A simpl logging system
-        >>> usage:  
-            log = mylogging()
-            log.info
-            log.warning
-            log.error
-            log.debug 
-            ...
-        
-        branch : is the log branch name in logging
-        llevel : is the shown log level in logging
-        showlog: the switch to enable log or not
+    A simpl logging system
+    usage:  
+    >>> log = mylogging()
+    ... log.info
+    ... log.warning
+    ... log.error
+    ... log.debug 
+
+    branch : str, the log branch name in logging
+    llevel : str, the shown log level in logging
+    showlog: bool, the switch to enable log or not
+    savelog: str/None, save log to a cerain directory
     """
 
     level_relation = {
@@ -784,7 +823,13 @@ class mylogging():
 
 
 def timethis(func):
-    """A wrapper for counting functions time spent"""
+    """
+    A wrapper for counting functions time spent
+    
+    >>> @timethis
+    ... def YouFunction(*args, **kwargs):
+    ...    ...
+    """
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
@@ -796,12 +841,10 @@ def timethis(func):
 
 class CodeTimer(object):
     """
-        Class for counting functions time spent\n
-        >>> example:
-            with CodeTimer():
-                code line;
-                code line;
-                ...
+    Class for counting functions time spent
+    >>> with CodeTimer():
+    ...     ... # your codes here
+    ...     ... 
     """
     def __init__(self, keep_num=3):
         self.start = time.time()
@@ -817,14 +860,20 @@ class CodeTimer(object):
 
 
 def mkdir(path):
-    """make directorys for the given path"""
+    """create directorys for the given path"""
     path = path.strip().rstrip("\\")
     if not os.path.exists(path):
         os.makedirs(path)
 
 
-def dict2json(target_dict, json_name, json_path):
-    """"dict to json"""
+def dict2json(target_dict, json_name, json_path) -> None:
+    """"
+    dict to json
+
+    target_dict: dict, the dict you want to convert to json
+    json_name  : str, the name of the json file
+    json_path  : str, the path to the json file 
+    """
     file = join_path(json_path, f'{json_name}.json')
     if not os.path.exists(json_path):
         mkdir(json_path)
@@ -833,7 +882,7 @@ def dict2json(target_dict, json_name, json_path):
         json_file.write(content)
 
 
-def json2dict(json_path):
+def json2dict(json_path) -> dict:
     """"json to dict"""
     with open(json_path, 'r', encoding='UTF-8') as f:
         return json.load(f)
@@ -842,8 +891,10 @@ def json2dict(json_path):
 def json2jsone(json_path: str, jsone_path: str):
     """ 
     Encrypt json file 
-    
-    >>> please make sure to send full jsone path(including name) for parameter 
+    please make sure to send full jsone path(including name) for parameter 
+
+    json_path : str, the json file you want to encrypt
+    jsone_path: str, the jsone file you want to save
     """
     KEY = Fernet.generate_key()
     FERNET = Fernet(KEY)
@@ -860,21 +911,27 @@ def json2jsone(json_path: str, jsone_path: str):
 
 
 def openjsone(jsone_path, key) -> dict:
-    """ Open encrypted json file """
+    """ 
+    Open encrypted json file 
+    jsone_path: str, jsone file path
+    key       : byte string, Fernet key for this jsone file  
+    """
     with open(jsone_path, "rb") as f:
         return json.loads(Fernet(key).decrypt(f.read()).decode('utf-8'))
 
 
 def parserinit(description, *args:dict):
     """
-        add arguments for scripts
-        >>> use:
-            args = parserinit(
-            'Script description there',
-            {'param': '-arg1', 'help': 'help1'},
-            {'param': '-arg2', 'help': 'help2'},
-            ....)
-        then you can get arg by args.args1, args.args2 ...
+    add arguments for scripts
+    >>> args = parserinit(
+    ... 'Script description there',
+    ... {'param': '-arg1', 'help': 'help1'},
+    ... {'param': '-arg2', 'help': 'help2'},
+    ... ....)
+    then you can get arg by 
+    args.args1, 
+    args.args2 
+    ...
     """
     parser = argparse.ArgumentParser(description=description)
     for arg in args:
@@ -887,14 +944,14 @@ def parserinit(description, *args:dict):
 
 def myArgument(description, *args:dict):
     """
-        add arguments
-        >>> use:
-            args = MyArgument(
-            'Script description there',
-            {'S_arg': '-short_arg1', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
-            {'S_arg': '-short_arg2', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
-            ....)
-        then you can get arg by args.args1, args.args2 ...
+    add arguments
+    >>> use:
+    ... args = MyArgument(
+    ... 'Script description there',
+    ... {'S_arg': '-short_arg1', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
+    ... {'S_arg': '-short_arg2', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
+    ... ....)
+    then you can get arg by args.args1, args.args2 ...
     """
     parser = argparse.ArgumentParser(description=description)
     for arg in args:
@@ -910,16 +967,17 @@ def myArgument(description, *args:dict):
 
 class zipreader(object):
     """
-        zipreader
-        open a zip and return a file content
+    zipreader
+    open a zip and return a file content
 
-        args:
-            zippath is the path of the zip file
-            filekeyword is the file path in the zip you want to open
+    zippath    : str, the path of the zip file
+    filekeyword: str, the file path in the zip you want to open
+    
+    TODO: currently only open one file?
 
-        >>> use:
-            with zipreader(zippath, filekeyword) as z:
-        z is content list now
+    >>> with zipreader(zippath, filekeyword) as z:
+    ...     ...
+    z is content list now
     """
     def __init__(self, zippath, filekeyword):
         with zipfile.ZipFile(zippath, "r") as z:
@@ -937,16 +995,15 @@ class zipreader(object):
 
 class zip2reader(object):
     """
-        open a zip which is inside zip and return a file content
+    open a zip which is inside zip and return a file content
 
-        args:
-            zippath is the path of the zip file
-            subziptype is the type of the zip inside the zip file
-            filekeyword is the file path in the zip you want to open
+    zippath    : str, the path of the zip file
+    subziptype : str, the type of the zip inside the zip file
+    filekeyword: str, the file path in the zip you want to open
 
-        >>> use:
-            with zip2reader(zippath, subziptype='zip', filekeyword='.log') as z:
-        z is content list now
+    >>> with zip2reader(zippath, subziptype='zip', filekeyword='.log') as z:
+    ...     ...
+    z is content list now
     """
 
     def __init__(self, zippath, subziptype='zip', filekeyword=''):
@@ -966,7 +1023,25 @@ class zip2reader(object):
 
 class DateTransformer():
     """
-        Date string transformation
+    Date string transformation
+
+    >>> DTF = DateTransformer("2023-07-27")
+    >>> DTF.year
+    2023
+    >>> DTF.month
+    7
+    >>> DTF.week
+    30
+    >>> DTF.quarter
+    2
+    >>> DTF.yaerweek
+    2023W30
+    >>> DTF.yearmonth
+    2023M07
+    >>> DTF.yearquarter
+    2023Q2
+    >>> DTF.timestamp
+    1690387200
     """
     def __init__(self, datestring):
         datestring = datestring.replace('-','')
@@ -992,14 +1067,15 @@ class DateTransformer():
 @contextmanager
 def ignored(exception=Exception, func=lambda:None, **kwargs):
     """
-        Use: 
-        with ignored(func = func, **kwargs):
-            xx 
-        same as 
-        try: 
-            xx 
-        except Exception
-            func
+    >>> with ignored(exception=Exception, func=SomeFunction, **kwargs):
+    ...     ... # some codes here
+    ...     ...  
+    
+    same as:
+    >>> try: 
+    ...     ... # some code here
+    ... except Exception
+    ...     SomeFunction(**kwargs)
     """
     try:
         yield
@@ -1009,9 +1085,16 @@ def ignored(exception=Exception, func=lambda:None, **kwargs):
 
 class xlsxDesigner():
     """
-        Generate an openpyxl type xlsx design
+    Generate an openpyxl type xlsx design
+
+    bgcolor  : str, background color
+    hzalign  : str[left/general/right/center], alignment setting in cell,
+    font     : str, font
+    fontsize : font size
+    fontbold : bool, bond font or not
     """
 
+    #  I choose some beautiful color for your choose
     sggcolor = {
         'BlueAngel'  : 'B7CEEC',
         'MagicMint'  : 'AAF0D1',
@@ -1037,9 +1120,7 @@ class xlsxDesigner():
 
 
 class xlsxMaker():
-    """
-        A class for making a xlsx file with openpyxl extension
-    """
+    """A class for making a xlsx file with openpyxl extension"""
 
     def __init__(self):
         self.wb = openpyxl.Workbook()
@@ -1104,23 +1185,22 @@ class xlsxMaker():
 
 class NuitkaMake():
     """
-        usage:
-            use Nuitka to build app
+    use Nuitka to build app
 
-        >>> example:
-            nm = NuitkaMake("main.py")
-            nm.ADD_ARG('onefile')
-            nm.ADD_ARG('standalone')
-            nm.ADD_ARG('remove-output')
-            nm.ADD_ARG('follow-imports')
-            nm.ADD_ARG(f'output-filename="{EXE}"')
-            nm.ADD_ARG(f'output-dir="{CWD}"')
-            nm.ADD_ARG(f'windows-icon-from-ico="{ICON}"')
-            nm.ADD_ARG('file-description="Test Time Counter"')
-            nm.ADD_ARG('copyright="Copyright (C) 2023 NVIDIA. all right reserved."')
-            nm.ADD_ARG(f'file-version="{VER}"')
-            nm.ADD_ARG(f'product-version="{VER}"')
-            nm.MAKE()
+    >>> example:
+    ... nm = NuitkaMake("main.py")
+    ... nm.ADD_ARG('onefile')
+    ... nm.ADD_ARG('standalone')
+    ... nm.ADD_ARG('remove-output')
+    ... nm.ADD_ARG('follow-imports')
+    ... nm.ADD_ARG(f'output-filename="{EXE}"')
+    ... nm.ADD_ARG(f'output-dir="{CWD}"')
+    ... nm.ADD_ARG(f'windows-icon-from-ico="{ICON}"')
+    ... nm.ADD_ARG('file-description="None"')
+    ... nm.ADD_ARG('copyright="None"')
+    ... nm.ADD_ARG(f'file-version="{VER}"')
+    ... nm.ADD_ARG(f'product-version="{VER}"')
+    ... nm.MAKE()
     """
     def __init__(self, main):
         if SYSTEM == 'Windows':
@@ -1173,27 +1253,26 @@ class Py2BAT():
 
 
 def _progress_bar(function, estimated_time, tstep, progress_name, tqdm_kwargs={}, args=[], kwargs={}):
-    """Tqdm wrapper for a long-running function
-        >>> args:
-            function       - function to run
-            estimated_time - how long you expect the function to take
-            tstep          - time delta (seconds) for progress bar updates
-            tqdm_kwargs    - kwargs to construct the progress bar
-            args           - args to pass to the function
-            kwargs         - keyword args to pass to the function
-        
-        ret:
-            function(*args, **kwargs)
-        
-        >>> example:
-                test = _progress_bar(
-                    running_function,
-                    estimated_time=5, 
-                    tstep=1/5.0,
-                    tqdm_kwargs={"bar_format":"{desc}{percentage:3.1f}%|{bar:25}|"},
-                    args=(1, "foo"), 
-                    kwargs={"spam":"eggs"}
-                    )
+    """
+    Tqdm wrapper for a long-running function
+        function       : function to run
+        estimated_time : how long you expect the function to take
+        tstep          : time delta (seconds) for progress bar updates
+        tqdm_kwargs    : kwargs to construct the progress bar
+        args           : args to pass to the function
+        kwargs         : keyword args to pass to the function
+    
+    ret:
+        function(*args, **kwargs)
+    
+    >>> test = _progress_bar(
+    ...        running_function,
+    ...        estimated_time=5, 
+    ...        tstep=1/5.0,
+    ...        tqdm_kwargs={"bar_format":"{desc}{percentage:3.1f}%|{bar:25}|"},
+    ...        args=(1, "foo"), 
+    ...        kwargs={"spam":"eggs"}
+    ...        )
     """
     ret = [None]  # Mutable var so the function can store its return value
     pbar = tqdm.tqdm(total=estimated_time,**tqdm_kwargs)
@@ -1244,42 +1323,41 @@ def _progress_bar(function, estimated_time, tstep, progress_name, tqdm_kwargs={}
 
 def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_format":"{desc}{percentage:3.0f}%|{bar:25}|"}):
     """
-        Decorate a function to add a progress bar
+    Decorate a function to add a progress bar
 
-        >>> example:
-            @progress_wrapped(estimated_time=8, tstep=0.2, progress_name='test')
-            def arunning_function(*args, **kwargs):
-                pass
-            
-            there provide a build in bar-print-function if your fucntion have a "_progress_bar" parameter
-
-            your can assign _progress_bar to anthing
-
-            it will be redirected to build in bar-print-function
-
-            then you can use 
-            _progress_bar.print_with_bar(message)(or _progress_bar.print): 
-                    print message with bar
-
-            _progress_bar.print_in_line(message)(or _progress_bat.write) : 
-                    print message in another line but keep progress bar moving
+    >>> @progress_wrapped(estimated_time=8, tstep=0.2, progress_name='test')
+    ... def arunning_function(*args, **kwargs):
+            ...
         
-        >>> example:
-                class A():
-                    @staticmethod
-                    @progressbar(estimated_time=8, tstep=0.1, progress_name='this is a test')
-                    def test_print(_progress_bar):
-                        import time
-                        _progress_bar.print("test1")
-                        _progress_bar.write("test1")
-                        time.sleep(2)
-                        _progress_bar.print_with_bar("test2")
-                        _progress_bar.print_in_line("test2")
-                        time.sleep(2)
-                        _progress_bar.print_with_bar("test3")
-                        _progress_bar.print_in_line("test3")
-                test_bar = None
-                A.test_print(_progress_bar=test_bar)
+    there provide a build in bar-print-function if your fucntion have a "_progress_bar" parameter
+
+    your can assign _progress_bar to anthing
+
+    it will be redirected to build in bar-print-function
+
+    then you can use 
+    _progress_bar.print_with_bar(message)(or _progress_bar.print): 
+            print message with bar
+
+    _progress_bar.print_in_line(message)(or _progress_bat.write) : 
+            print message in another line but keep progress bar moving
+        
+    >>> class A():
+    ...     @staticmethod
+    ...     @progressbar(estimated_time=8, tstep=0.1, progress_name='this is a test')
+    ...     def test_print(_progress_bar):
+    ...         import time
+    ...         _progress_bar.print("test1")
+    ...         _progress_bar.write("test1")
+    ...         time.sleep(2)
+    ...         _progress_bar.print_with_bar("test2")
+    ...         _progress_bar.print_in_line("test2")
+    ...         time.sleep(2)
+    ...         _progress_bar.print_with_bar("test3")
+    ...         _progress_bar.print_in_line("test3")
+    ... 
+    ... test_bar = None
+    ... A.test_print(_progress_bar=test_bar)
     """
     # back up: tqdm_kwargs={"bar_format":"{desc}: {percentage:3.0f}%|{bar:25}| {n:.1f}/{total:.1f} [{elapsed}<{remaining}]"}
     def real_decorator(function):
@@ -1289,8 +1367,13 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
         return wrapper
     return real_decorator
 
+
 def merge_dicts(dict1, dict2):
-    """ merge 2 dicts into 1 """
+    """
+    merge 2 dicts into 1 
+    please make sure you use dict(merge_dicts(dict1, dict2)), if you want to get the merged dict
+    >>> return_dict = dict(merge_dicts(dict1, dict2))
+    """
     for k in set(dict1) | set(dict2):
     # for k in set(dict1.keys()).union(dict2.keys()):
         if k in dict1 and k in dict2:
@@ -1311,6 +1394,7 @@ def merge_all_dicts(dict_container:list):
     """ 
     merge mutiple dicts into one dict 
     dict_container is a list, whose elements are all the dicts you want to combine
+    >>> merge_all_dicts([dict1, dict2, ...])
     """
     if len(dict_container) > 1:
         for idx in range(len(dict_container)):
@@ -1325,26 +1409,30 @@ def merge_all_dicts(dict_container:list):
         return dict_container[0]
     else:
         return {}
+    
+traceback_get   = lambda: traceback.format_exc()   # get the traceback string
+traceback_print = lambda: traceback.print_exc()    # print the traceback
+exception_print = lambda e: print(repr(e))         # print the exception
+SEP             =  os.sep
+DESKTOPPATH     =  desktop_path()
+CURRENTTIME     =  get_current_time()
+CURRENTDATE     =  CURRENTTIME.split(" ")[0]
+CURRENTWORKDIR  =  get_runtime_path()
+CURRENTYEAR     =  int(dt.now().isocalendar()[0])
+CURRENTWEEK     =  int(dt.now().isocalendar()[1])
 
-SEP            =  os.sep
-DESKTOPPATH    =  desktop_path()
-CURRENTTIME    =  get_current_time()
-CURRENTDATE    =  CURRENTTIME.split(" ")[0]
-CURRENTWORKDIR =  get_runtime_path()
-CURRENTYEAR    =  int(dt.now().isocalendar()[0])
-CURRENTWEEK    =  int(dt.now().isocalendar()[1])
-SYSTEM         =  platform.system()
 
-
-def GV_list():
+def GV():
     print("SEP            : system file path divided sign")
     print("DESKTOPPATH    : your desktop path")
-    print("CURRENTTIME    : current date")
+    print("CURRENTTIME    : current date + time")
+    print("CURRENTDATE    : current date")
     print("CURRENTWORKDIR : current work directory")
     print("CURRENTYEAR    : current year")
     print("CURRENTWEEK    : current week")
+    print("SYSTEM         : sytem type")
 
 
 if __name__ == '__main__':
-    daemontool_log = mylogging(branch='DAEMON_LOGGING')
-    daemontool_log.info(f'daemontool - v{__version__}')
+    sysc("python --version")
+    sysc("pip list")
