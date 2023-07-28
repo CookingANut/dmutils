@@ -25,7 +25,6 @@ try:
 except ImportError:
     from urllib2 import urlopen
     from urlparse import urlparse
-
 from openpyxl.styles import (
     Border,
     Side,
@@ -35,7 +34,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '4.1.4'
+__version__ = '5.0.0'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
