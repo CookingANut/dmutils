@@ -1,5 +1,5 @@
-# daemontool
+# dmutil
 
- Usage: Often used functions for python script coding
+ My Python Coding Utils
 
- Install: pip install daemontool-xxx.tar.gz
+ Install: pip install dmutil-x.x.x.tar.gz

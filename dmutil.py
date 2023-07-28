@@ -3,6 +3,7 @@ import logging
 import platform
 import time
 import json
+import sys
 if (SYSTEM := platform.system()) == "Windows":
     import winreg
 import argparse
@@ -17,6 +18,14 @@ import threading
 import functools
 from cryptography.fernet import Fernet
 import traceback
+import socket
+try:
+    from urllib.request import urlopen
+    from urllib.parse import urlparse
+except ImportError:
+    from urllib2 import urlopen
+    from urlparse import urlparse
+
 from openpyxl.styles import (
     Border,
     Side,
@@ -26,7 +35,22 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '4.1.3'
+__version__ = '4.1.4'
+
+URLS = {
+    'Pytorch'            : 'https://pytorch.org/',
+    'MXNet'              : 'https://github.com/apache/incubator-mxnet',
+    'FashionMNIST'       : 'https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/train-labels-idx1-ubyte.gz',
+    'PYPI'               : 'https://pypi.python.org/pypi/pip',
+    'Conda'              : 'https://repo.continuum.io/pkgs/free/',
+}
+
+REGIONAL_URLS = {
+    'cn': {
+        'PYPI(douban)'    : 'https://pypi.douban.com/',
+        'Conda(tsinghua)' : 'https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/free/',
+    }
+}
 
 BATHEADER = """
 1>2# : ^
@@ -628,15 +652,17 @@ def desktop_path():
         return "/home/"
 
 
-def sysc(command, cwd=None):
+def sysc(command: str, cwd=None, outprint=True, printfunction=print):
     """
     Combine win_command and bash_command into one unify function
     - use p.stdout to get output instead of p.communicate to have a real time output
     - use p.poll() to check if the process is still running or not
     - return output -> list and return code
 
-    command: str, your running command in system
-    cwd    : str, you commmand running working directory
+    command : str, your running command in system
+    cwd     : str, you commmand running working directory
+    outprint: bool, whether to print
+    printfunction : func, print function, default is print
     """
     p = subprocess.Popen(
         command,
@@ -649,7 +675,8 @@ def sysc(command, cwd=None):
     OUT = []
     while (line := p.stdout.readline()) != '' or (RC := p.poll()) is None:
         if line:
-            print(line.strip())
+            if outprint:
+                printfunction(line.strip())
             OUT.append(line.strip())
 
     return OUT, RC
@@ -906,13 +933,35 @@ def json2jsone(json_path: str, jsone_path: str):
     with open(jsone_path, "wb") as f:
         f.write(dict_encrypted)
 
-    print(f"Encrypted your json to: {jsone_path}")
-    print(f"Remember copy your Key: {KEY}")
+    print(f"Encrypted json to: {jsone_path}")
+    print(f"Decrypt key: {KEY}")
+
+
+def dict2jsone(target_dict, jsone_name, jsone_path):
+    """
+    Ecrypt dict to jsone encrypted file
+
+    target_dict: dict
+    jsone_name : str, the name of the jsone file
+    jsone_path : str, the generated path of the jsone file
+    """
+    KEY = Fernet.generate_key()
+    FERNET = Fernet(KEY)
+    jsone_file_path = join_path(jsone_path, f'{jsone_name}.jsone')
+    dict_original = json.dumps(target_dict).encode()
+    dict_encrypted = FERNET.encrypt(dict_original)
+
+    with open(jsone_file_path, "wb") as f:
+        f.write(dict_encrypted)
+
+    print(f"Encrypted dict to: {jsone_file_path}")
+    print(f"Decrypt key: {KEY}")
 
 
 def openjsone(jsone_path, key) -> dict:
     """ 
     Open encrypted json file 
+
     jsone_path: str, jsone file path
     key       : byte string, Fernet key for this jsone file  
     """
@@ -923,6 +972,7 @@ def openjsone(jsone_path, key) -> dict:
 def parserinit(description, *args:dict):
     """
     add arguments for scripts
+
     >>> args = parserinit(
     ... 'Script description there',
     ... {'param': '-arg1', 'help': 'help1'},
@@ -944,9 +994,9 @@ def parserinit(description, *args:dict):
 
 def myArgument(description, *args:dict):
     """
-    add arguments
-    >>> use:
-    ... args = MyArgument(
+    arguments creation with argparse
+
+    >>> args = MyArgument(
     ... 'Script description there',
     ... {'S_arg': '-short_arg1', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
     ... {'S_arg': '-short_arg2', 'F_arg': '--full_arg2', 'type': type, 'default': default_value, 'help': 'help description'},
@@ -967,7 +1017,6 @@ def myArgument(description, *args:dict):
 
 class zipreader(object):
     """
-    zipreader
     open a zip and return a file content
 
     zippath    : str, the path of the zip file
@@ -1120,7 +1169,15 @@ class xlsxDesigner():
 
 
 class xlsxMaker():
-    """A class for making a xlsx file with openpyxl extension"""
+    """
+    A class for making a xlsx file with openpyxl extension
+    
+    create_sheet    : create a xlsx file's sheet
+    auto_fit_width  : adjust excel's sheet's auto-adaptive width
+    write2cell      : write to sheet's cell
+    write2mergecell : write to sheet's merge cell
+    save            : save xlsx file
+    """
 
     def __init__(self):
         self.wb = openpyxl.Workbook()
@@ -1187,8 +1244,7 @@ class NuitkaMake():
     """
     use Nuitka to build app
 
-    >>> example:
-    ... nm = NuitkaMake("main.py")
+    >>> nm = NuitkaMake("main.py")
     ... nm.ADD_ARG('onefile')
     ... nm.ADD_ARG('standalone')
     ... nm.ADD_ARG('remove-output')
@@ -1227,16 +1283,12 @@ class NuitkaMake():
 
 class Py2BAT():
     """
-        usage:
-            make py file to windows batch file
+    make py file to windows batch file
 
-        args:
-            batchname  : name of your batch file
-            output_path: define the generated batch file path
-        
-        example:
-            Py2BAT("main.py", batname='test').MAKE()
-
+    batchname  : name of your batch file
+    output_path: define the generated batch file path
+    
+    >>> Py2BAT("main.py", batname='test').MAKE()
     """
     def __init__(self, main, batname="Null", output_path=get_runtime_path()):
         self.main = main
@@ -1255,6 +1307,7 @@ class Py2BAT():
 def _progress_bar(function, estimated_time, tstep, progress_name, tqdm_kwargs={}, args=[], kwargs={}):
     """
     Tqdm wrapper for a long-running function
+
         function       : function to run
         estimated_time : how long you expect the function to take
         tstep          : time delta (seconds) for progress bar updates
@@ -1321,7 +1374,15 @@ def _progress_bar(function, estimated_time, tstep, progress_name, tqdm_kwargs={}
     return ret[0]
 
 
-def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_format":"{desc}{percentage:3.0f}%|{bar:25}|"}):
+def progressbar(
+        estimated_time,
+        tstep=0.1,
+        progress_name='',
+        tqdm_kwargs={
+            "leave": False,
+            "bar_format": "{desc}{percentage:3.0f}%|{bar:25}|"
+        }
+    ):
     """
     Decorate a function to add a progress bar
 
@@ -1335,13 +1396,22 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
 
     it will be redirected to build in bar-print-function
 
-    then you can use 
-    _progress_bar.print_with_bar(message)(or _progress_bar.print): 
-            print message with bar
+    then you can use like this way
 
-    _progress_bar.print_in_line(message)(or _progress_bat.write) : 
-            print message in another line but keep progress bar moving
-        
+    - print message with bar
+
+    >>> _progress_bar.print_with_bar(message)
+    or
+    >>> _progress_bar.print(message)
+
+
+    - print message in another line but keep progress bar moving
+
+    >>> _progress_bar.print_in_line(message)
+    or
+    >>> _progress_bat.write(message)
+
+    DEMO:
     >>> class A():
     ...     @staticmethod
     ...     @progressbar(estimated_time=8, tstep=0.1, progress_name='this is a test')
@@ -1370,10 +1440,13 @@ def progressbar(estimated_time, tstep=0.1, progress_name='',tqdm_kwargs={"bar_fo
 
 def merge_dicts(dict1, dict2):
     """
-    merge 2 dicts into 1 
+    merge two dicts and return one dict
+
     please make sure you use dict(merge_dicts(dict1, dict2)), if you want to get the merged dict
+
     >>> return_dict = dict(merge_dicts(dict1, dict2))
     """
+
     for k in set(dict1) | set(dict2):
     # for k in set(dict1.keys()).union(dict2.keys()):
         if k in dict1 and k in dict2:
@@ -1393,9 +1466,12 @@ def merge_dicts(dict1, dict2):
 def merge_all_dicts(dict_container:list):
     """ 
     merge mutiple dicts into one dict 
+
     dict_container is a list, whose elements are all the dicts you want to combine
+
     >>> merge_all_dicts([dict1, dict2, ...])
     """
+
     if len(dict_container) > 1:
         for idx in range(len(dict_container)):
             if idx == 0:
@@ -1410,9 +1486,167 @@ def merge_all_dicts(dict_container:list):
     else:
         return {}
     
+
+def test_connection(name, url, timeout=10):
+    """Simple connection test"""
+    urlinfo = urlparse(url)
+    start = time.time()
+    try:
+        ip = socket.gethostbyname(urlinfo.netloc)
+    except Exception as e:
+        print('Error resolving DNS for {}: {}, {}'.format(name, url, e))
+        return
+    dns_elapsed = time.time() - start
+    start = time.time()
+    try:
+        _ = urlopen(url, timeout=timeout)
+    except Exception as e:
+        print("Error open {}: {}, {}, DNS finished in {} sec.".format(name, url, e, dns_elapsed))
+        return
+    load_elapsed = time.time() - start
+    print("Timing for {}: {}, DNS: {:.4f} sec, LOAD: {:.4f} sec.".format(name, url, dns_elapsed, load_elapsed))
+
+
+def check_network(region="cn", timeout=10):
+    print('----------Network Test----------')
+    if timeout > 0:
+        print(f'Setting timeout: {timeout}')
+        socket.setdefaulttimeout(10)
+    for region in region.strip().split(','):
+        r = region.strip().lower()
+        if not r:
+            continue
+        if r in REGIONAL_URLS:
+            URLS.update(REGIONAL_URLS[r])
+        else:
+            import warnings
+            warnings.warn(f'Region {r} do not need specific test, please refer to global sites.')
+    for name, url in URLS.items():
+        test_connection(name, url, timeout)
+
+
+def check_python():
+    print('----------* Python *----------')
+    print('Version      :', platform.python_version())
+    print('Compiler     :', platform.python_compiler())
+    print('Build        :', platform.python_build())
+    print('Arch         :', platform.architecture())
+
+
+def check_pip():
+    print('------------* Pip Info *-----------')
+    try:
+        import pip
+        print('Version      :', pip.__version__)
+        print('Directory    :', os.path.dirname(pip.__file__))
+    except ImportError:
+        print('No corresponding pip install for current python.')
+
+
+def check_pytorch():
+    print('----------* Pytorch *----------')
+    try:
+        import torch
+
+        print('Version      :',torch.__version__)
+        cudaenbale = torch.cuda.is_available()
+        device = torch.device("cuda" if cudaenbale else "cpu") 
+        if cudaenbale: 
+            print('CUDA         :', torch.version.cuda)
+            print('CUDNN        :', torch.backends.cudnn.version())
+            print('GPU          :', torch.cuda.get_device_name(device))
+    except ImportError:
+        print('No pytorch installed.')
+
+
+def check_mxnet():
+    print('----------* MXNet Info *-----------')
+    def get_build_features_str():
+        import mxnet.runtime
+        features = mxnet.runtime.Features()
+        return '\n'.join(map(str, list(features.values())))
+    
+    try:
+        import mxnet
+        print('Version      :', mxnet.__version__)
+        mx_dir = os.path.dirname(mxnet.__file__)
+        print('Directory    :', mx_dir)
+        try:
+            branch = mxnet.runtime.get_branch()
+            commit_hash = mxnet.runtime.get_commit_hash()
+            print('Branch       :', branch)
+            print('Commit Hash  :', commit_hash)
+        except AttributeError:
+            commit_hash = os.path.join(mx_dir, 'COMMIT_HASH')
+            if os.path.exists(commit_hash):
+                with open(commit_hash, 'r') as f:
+                    ch = f.read().strip()
+                    print('Commit Hash   :', ch)
+            else:
+                print('Commit hash file "{}" not found. Not installed from pre-built package or built from source.'.format(commit_hash))
+        print('Library      :', mxnet.libinfo.find_lib_path())
+        try:
+            print('Build features:')
+            print(get_build_features_str())
+        except (AttributeError, ModuleNotFoundError):
+            print('No runtime build feature info available')
+    except ImportError:
+        print('No MXNet installed.')
+    except Exception as e:
+        import traceback
+        if not isinstance(e, IOError):
+            print("An error occured trying to import mxnet.")
+            print("This is very likely due to missing missing or incompatible library files.")
+        print(traceback.format_exc())
+
+
+def check_os():
+    print('----------* System *----------')
+    print('Platform     :', platform.platform())
+    print('system       :', platform.system())
+    print('node         :', platform.node())
+    print('release      :', platform.release())
+    print('version      :', platform.version())
+    print('syspath      :')
+    print('\n'.join(sys.path))
+
+
+def check_hardware():
+    print('----------* Hardware *----------')
+    print('machine      :', platform.machine())
+    print('processor    :', platform.processor())
+    if SYSTEM == "linux":
+        subprocess.call(['lscpu'])
+    elif SYSTEM == "windows":
+        out, _ = sysc("wmic cpu get name")
+        cpu = out.split('\n')[2]
+        print('CPU          :', cpu)
+
+
+def check_environment():
+    print('----------* Environment *----------')
+    for k,v in os.environ.items():
+        # if k.startswith('MXNET_') or k.startswith('OMP_') or k.startswith('KMP_') or k == 'CC' or k == 'CXX':
+            print('{}="{}"'.format(k,v))
+
+
+def diagsys():
+    """diagnose your system"""
+    check_network()
+    check_python()
+    check_pip()
+    check_os()
+    check_hardware()
+    # check_environment()
+    check_pytorch()
+    check_mxnet()
+
+    
 traceback_get   = lambda: traceback.format_exc()   # get the traceback string
 traceback_print = lambda: traceback.print_exc()    # print the traceback
 exception_print = lambda e: print(repr(e))         # print the exception
+
+
 SEP             =  os.sep
 DESKTOPPATH     =  desktop_path()
 CURRENTTIME     =  get_current_time()
@@ -1423,16 +1657,15 @@ CURRENTWEEK     =  int(dt.now().isocalendar()[1])
 
 
 def GV():
-    print("SEP            : system file path divided sign")
-    print("DESKTOPPATH    : your desktop path")
-    print("CURRENTTIME    : current date + time")
-    print("CURRENTDATE    : current date")
-    print("CURRENTWORKDIR : current work directory")
-    print("CURRENTYEAR    : current year")
-    print("CURRENTWEEK    : current week")
-    print("SYSTEM         : sytem type")
+    print(f"SEP            : system file path divided sign -> {SEP}")
+    print(f"DESKTOPPATH    : your desktop path -> {DESKTOPPATH}")
+    print(f"CURRENTTIME    : current date + time -> {CURRENTTIME}")
+    print(f"CURRENTDATE    : current date -> {CURRENTDATE}")
+    print(f"CURRENTWORKDIR : current work directory -> {CURRENTWORKDIR}")
+    print(f"CURRENTYEAR    : current year -> {CURRENTYEAR}")
+    print(f"CURRENTWEEK    : current week ->{CURRENTWEEK}")
+    print(f"SYSTEM         : sytem type -> {SYSTEM}")
 
 
 if __name__ == '__main__':
-    sysc("python --version")
-    sysc("pip list")
+    diagsys()

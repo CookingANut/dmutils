@@ -1,9 +1,13 @@
-import os
-import sys
-from dmutil import __version__
+from dmutil import (
+    __version__, 
+    progressbar, 
+    sysc, 
+    os, 
+    sys,
+    timethis
+)
 
-
-command =  os.system
+command =  sysc
 join    =  os.path.join
 uppip   = 'python -m pip install --upgrade pip'
 
@@ -29,10 +33,11 @@ class WheelMaker():
         self.egg_path   = join(os.getcwd(), 'dmutil.egg-info')
 
     def __call__(self):
-        self.auto_build()
+        self.auto_build(_progress_bar=None)
 
-    def create_setup(self):
+    def create_setup(self, _progress_bar):
         """create temp setup.py"""
+        _progress_bar.print('creating temp setup.py')
         with open('./setup.py', 'w') as setup:
             writecode = lambda code: setup.write(code + '\n')
             writecode("from setuptools import setup")
@@ -46,37 +51,50 @@ class WheelMaker():
             writecode("    python_requires='>=3.8',")
             writecode("    py_modules=['dmutil'],")
             writecode(")")
-        print('temp setup.py creation completed!')
+        _progress_bar.write('temp setup.py creation completed!')
 
-    def remove_old(self):
+    def remove_old(self,_progress_bar):
         """remove old dist folder"""
         # in windows need to use "{path}" to include the path, not '{path}'
-        command(f'{rm}"./*.tar.gz"')
+        _progress_bar.print('removing old module')
+        command(f'{rm}"./*.tar.gz"', printfunction=_progress_bar.write)
+        _progress_bar.print('done')
 
-    def make_lib(self):
+    def make_lib(self, _progress_bar):
         """make lib"""
-        command(f'{install} wheel')
-        command(f'{uppip}')
-        command(f'python "{self.setup_path}" sdist')
-        command(f'{rm}"{self.setup_path}"') # remove temp setup.py
-        command(f'{rm_rf}"{self.egg_path}"') # remove egg-info folder
+        _progress_bar.print('installing wheel')
+        command(f'pip install wheel', printfunction=_progress_bar.write)
+        _progress_bar.print('updating pip')
+        command(f'{uppip}', printfunction=_progress_bar.write)
+        _progress_bar.print('making wheel file')
+        command(f'python "{self.setup_path}" sdist', printfunction=_progress_bar.write)
+        _progress_bar.print('removing temp setup.py and egg-info folder')
+        command(f'{rm}"{self.setup_path}"', printfunction=_progress_bar.write)
+        command(f'{rm_rf}"{self.egg_path}"', printfunction=_progress_bar.write)
         
-    def if_install(self):
+    def if_install(self, _progress_bar):
         """ask if need to install lib"""
         lib_path = join(self.dist_path, os.listdir(self.dist_path)[0])
         lib_name = os.listdir(self.dist_path)[0]
-        command(f'{mv}"{lib_path}" .') # move lib to workspace
-        command(f'{rm_rf}"{self.dist_path}"') # remove dist folder
+        _progress_bar.print('moving module to current location')
+        command(f'{mv}"{lib_path}" .', printfunction=_progress_bar.write)
+        _progress_bar.print('removing dist folder')
+        command(f'{rm_rf}"{self.dist_path}"', printfunction=_progress_bar.write)
         # need_install = input('Do you need install it now? y/n ')
         # if need_install == 'y':
-        command(f'{install}"./{lib_name}"')
+        _progress_bar.print('installing module')
+        command(f'{install}"./{lib_name}"', printfunction=_progress_bar.write)
+        _progress_bar.print('installation complete')
 
-    def auto_build(self):
+    @timethis
+    @progressbar(estimated_time=4.5, tstep=0.1, progress_name='Wheel Creating Process')
+    def auto_build(self, _progress_bar):
         """auto run sequence"""
-        self.create_setup()
-        self.remove_old()
-        self.make_lib()
-        self.if_install()
+        self.create_setup(_progress_bar)
+        self.remove_old(_progress_bar)
+        self.make_lib(_progress_bar)
+        self.if_install(_progress_bar)
+        _progress_bar.write("wheel creation completed.")
 
     @classmethod
     def installation(cls):
