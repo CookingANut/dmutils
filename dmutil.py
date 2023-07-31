@@ -34,7 +34,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '5.0.0'
+__version__ = '5.0.2'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
@@ -1090,6 +1090,8 @@ class DateTransformer():
     2023Q2
     >>> DTF.timestamp
     1690387200
+    >>> DTF.weekday
+    4
     """
     def __init__(self, datestring):
         datestring = datestring.replace('-','')
@@ -1100,6 +1102,7 @@ class DateTransformer():
         self.week        = int(_DateInformation[1])
         self.month       = int(_FormatDateString.month)
         self.quarter     = int(self.month // 4 + 1)
+        self.weekday     = _FormatDateString.isoweekday()
         if len(str(self.week)) == 2:
             self.yearweek  = f"{self.year}W{self.week}"
         elif len(str(self.week)) == 1:
@@ -1640,10 +1643,26 @@ def diagsys():
     check_pytorch()
     check_mxnet()
 
-    
-traceback_get   = lambda: traceback.format_exc()   # get the traceback string
-traceback_print = lambda: traceback.print_exc()    # print the traceback
-exception_print = lambda e: print(repr(e))         # print the exception
+ 
+def traceback_get():
+    """get the traceback string"""
+    return traceback.format_exc()
+
+
+def traceback_print():
+    """print the traceback"""
+    traceback.print_exc()
+
+
+def exception_get(e):
+    """get the exception"""
+    return repr(e)
+
+
+def exception_print(e):
+    """print the exception"""
+    print(repr(e))
+
 
 
 SEP             =  os.sep
