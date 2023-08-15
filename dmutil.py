@@ -34,7 +34,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '5.0.2'
+__version__ = '5.0.3'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
@@ -724,6 +724,15 @@ def get_all_path(rootdir):
         if os.path.isdir(com_path):
             path_list.extend(get_all_path(com_path))
     return path_list
+
+
+def resource_path(filepath):
+    """return absolute path if your file is under executable"""
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+    return os.path.join(application_path, filepath)
 
 
 def folder_level_X_path(path, level=3):
