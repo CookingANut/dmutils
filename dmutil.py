@@ -19,6 +19,7 @@ import functools
 from cryptography.fernet import Fernet
 import traceback
 import socket
+import shutil
 try:
     from urllib.request import urlopen
     from urllib.parse import urlparse
@@ -34,7 +35,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '5.0.3'
+__version__ = '5.0.4'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
@@ -641,6 +642,7 @@ Options:
                         plugins. Default False.
 """
 
+# 1. Function part
 
 def desktop_path():
     """return your desktop path"""
@@ -1107,6 +1109,7 @@ class DateTransformer():
         _FormatDateString = dt.strptime(datestring,"%Y%m%d")
         _DateInformation = _FormatDateString.isocalendar()
         
+        self.to_Tdate    = _FormatDateString.date()  # trnasform string to date type
         self.year        = int(_DateInformation[0])
         self.week        = int(_DateInformation[1])
         self.month       = int(_FormatDateString.month)
@@ -1673,26 +1676,152 @@ def exception_print(e):
     print(repr(e))
 
 
+def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_lst=[]) -> list:
+    """ only support personal designed tree files, otherwise this function is useless"""
+    path_list = []
+    shutil.copyfile(treezip, fr"{CURRENTWORKDIR}{SEP}tmptree.zip")
+    print(f"copy file to {CURRENTWORKDIR}{SEP}tmptree.zip")
+    treezip = fr"{CURRENTWORKDIR}{SEP}tmptree.zip" 
 
-SEP             =  os.sep
-DESKTOPPATH     =  desktop_path()
-CURRENTTIME     =  get_current_time()
-CURRENTDATE     =  CURRENTTIME.split(" ")[0]
-CURRENTWORKDIR  =  get_runtime_path()
-CURRENTYEAR     =  int(dt.now().isocalendar()[0])
-CURRENTWEEK     =  int(dt.now().isocalendar()[1])
+    if factory_lst and not product_lst and not station_lst:
+        scenario = "FACTORY_ONLY"
+    elif factory_lst and product_lst and not station_lst:
+        scenario = "FACTORY_plus_PRODUCT"
+    elif factory_lst and not product_lst and station_lst:
+        scenario = "FACTORY_plus_STATION"
+    elif factory_lst and product_lst and station_lst:
+        scenario = "FACTORY_plus_PRODUCT_plus_STATION"
+    elif not factory_lst and product_lst and not station_lst:
+        scenario = "PRODUCT_ONLY"
+    elif not factory_lst and product_lst and station_lst:
+        scenario = "PRODUCT_plus_STATION"
+    elif not factory_lst and not product_lst and station_lst:
+        scenario = "STATION_ONLY"
+    elif not factory_lst and not product_lst and not station_lst:
+        scenario = "ALL"
 
+    match scenario:
+        case "ALL":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    with z.open(tree_file, 'r') as file:
+                        abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                        if type_lst:
+                            for abs_path in abs_path_list:
+                                if any(log_type in abs_path for log_type in type_lst):
+                                    path_list.append(abs_path)
+                        else:
+                            path_list.extend(abs_path_list)
+        case "FACTORY_ONLY":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    factory_in_tree = tree_file.split('_')[0]
+                    if factory_in_tree in factory_lst:
+                        with z.open(tree_file, 'r') as file:
+                            abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                        if type_lst:
+                            for abs_path in abs_path_list:
+                                if any(log_type in abs_path for log_type in type_lst):
+                                    path_list.append(abs_path)
+                        else:
+                            path_list.extend(abs_path_list)
+        case "PRODUCT_ONLY":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    with z.open(tree_file, 'r') as file:
+                        abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                        for abs_path in abs_path_list:
+                            product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                            if any(product in product_in_tree for product in product_lst):
+                                if type_lst:
+                                    if any(log_type in abs_path for log_type in type_lst):
+                                        path_list.append(abs_path)
+                                else:
+                                    path_list.append(abs_path)
+        case "STATION_ONLY":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    with z.open(tree_file, 'r') as file:
+                        abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                        for abs_path in abs_path_list:
+                            station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            if any(station in station_in_tree for station in station_lst):
+                                if type_lst:
+                                    if any(log_type in abs_path for log_type in type_lst):
+                                        path_list.append(abs_path)
+                                else:
+                                    path_list.append(abs_path)
+        case "FACTORY_plus_PRODUCT":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    factory_in_tree = tree_file.split('_')[0]
+                    if factory_in_tree in factory_lst:
+                        with z.open(tree_file, 'r') as file:
+                            abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                            for abs_path in abs_path_list:
+                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                if any(product in product_in_tree for product in product_lst):
+                                    if type_lst:
+                                        if any(log_type in abs_path for log_type in type_lst):
+                                            path_list.append(abs_path)
+                                    else:
+                                        path_list.append(abs_path)
+        case "FACTORY_plus_STATION":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    factory_in_tree = tree_file.split('_')[0]
+                    if factory_in_tree in factory_lst:
+                        with z.open(tree_file, 'r') as file:
+                            abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                            for abs_path in abs_path_list:
+                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                if any(station in station_in_tree for station in station_lst):
+                                    if type_lst:
+                                        if any(log_type in abs_path for log_type in type_lst):
+                                            path_list.append(abs_path)
+                                    else:
+                                        path_list.append(abs_path)
+        case "FACTORY_plus_PRODUCT_plus_STATION":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    factory_in_tree = tree_file.split('_')[0]
+                    if factory_in_tree in factory_lst:
+                        with z.open(tree_file, 'r') as file:
+                            abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                            for abs_path in abs_path_list:
+                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                if any(station in station_in_tree for station in station_lst) and any(product in product_in_tree for product in product_lst):
+                                    if type_lst:
+                                        if any(log_type in abs_path for log_type in type_lst):
+                                            path_list.append(abs_path)
+                                    else:
+                                        path_list.append(abs_path)
+        case "PRODUCT_plus_STATION":
+            with zipfile.ZipFile(treezip, "r") as z:
+                for tree_file in reversed(z.namelist()):
+                    with z.open(tree_file, 'r') as file:
+                        abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
+                        for abs_path in abs_path_list:
+                            product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                            station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            if any(station in station_in_tree for station in station_lst) and any(product in product_in_tree for product in product_lst):
+                                if type_lst:
+                                    if any(log_type in abs_path for log_type in type_lst):
+                                        path_list.append(abs_path)
+                                else:
+                                    path_list.append(abs_path)
+    os.remove(treezip)
+    print("Parsing Tree File Successfullly!")
+    return path_list
 
-def GV():
-    print(f"SEP            : system file path divided sign -> {SEP}")
-    print(f"DESKTOPPATH    : your desktop path -> {DESKTOPPATH}")
-    print(f"CURRENTTIME    : current date + time -> {CURRENTTIME}")
-    print(f"CURRENTDATE    : current date -> {CURRENTDATE}")
-    print(f"CURRENTWORKDIR : current work directory -> {CURRENTWORKDIR}")
-    print(f"CURRENTYEAR    : current year -> {CURRENTYEAR}")
-    print(f"CURRENTWEEK    : current week ->{CURRENTWEEK}")
-    print(f"SYSTEM         : sytem type -> {SYSTEM}")
+# 2. GV part
+SEP             =   os.sep                          # system file path divided sign
+DESKTOPPATH     =   desktop_path()                  # Desktop path
+CURRENTTIME     =   get_current_time()              # current date + time
+CURRENTDATE     =   CURRENTTIME.split(" ")[0]       # current date
+CURRENTWORKDIR  =   get_runtime_path()              # current work directory
+CURRENTYEAR     =   int(dt.now().isocalendar()[0])  # current year
+CURRENTWEEK     =   int(dt.now().isocalendar()[1])  # current week
+SYSTEM          =   SYSTEM                          # operation system
 
-
-if __name__ == '__main__':
-    diagsys()
