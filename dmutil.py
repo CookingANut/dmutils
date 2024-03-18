@@ -35,7 +35,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '5.0.4'
+__version__ = '5.0.6'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
@@ -770,6 +770,48 @@ def get_current_time(format="%Y-%m-%d %H:%M:%S"):
     """
     return time.strftime(format, time.localtime())
 
+class Tee:
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for file in self.files:
+            file.write(obj)
+
+    def flush(self):
+        for file in self.files:
+            file.flush()
+
+
+def teewrap(run_time_log):
+    def decorator_log_to_file(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            with open(run_time_log, 'w') as f:
+                tee = Tee(sys.stdout, f)
+                stdout_original = sys.stdout 
+
+                # Redirect stdout to tee(stdout and file)
+                sys.stdout = tee
+
+                # Create a new logger and configure it
+                logger = logging.getLogger()
+                logger.setLevel(logging.DEBUG)
+                handler = logging.StreamHandler(tee)
+                formatter = logging.Formatter('%(asctime)s [%(levelname)s]%(message)s')
+                handler.setFormatter(formatter)
+                logger.addHandler(handler)
+
+                result = func(*args, **kwargs)
+
+                # Restore stdout and remove the handler
+                sys.stdout = stdout_original
+                logger.removeHandler(handler)
+
+                return result
+        return wrapper
+    return decorator_log_to_file
+
 
 def __logorder__(func):
     """build in wrapper for mylogging, user do not use"""
@@ -789,7 +831,6 @@ def __logorder__(func):
             pass
         return func(self, msg)
     return wrapper
-
 
 class mylogging():
     """
@@ -824,7 +865,8 @@ class mylogging():
         if not savelog:
             logging.basicConfig(level=self.level_relation[llevel], format=self.format)
         else:
-            os.remove(savelog)
+            if os.path.exists(savelog):
+                os.remove(savelog)
             fh = logging.FileHandler(savelog)
             sh = logging.StreamHandler()
             ft = logging.Formatter(self.format)
@@ -840,23 +882,23 @@ class mylogging():
 
     @__logorder__
     def info(self, msg):
-        pass
+        ...
     
     @__logorder__
     def debug(self, msg):
-        pass
+        ...
     
     @__logorder__
     def warning(self, msg):
-        pass
+        ...
     
     @__logorder__
     def error(self, msg):
-        pass
+        ...
 
     @__logorder__
     def exception(self, msg):
-        pass
+        ...
 
 
 def timethis(func):
@@ -1731,7 +1773,10 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                     with z.open(tree_file, 'r') as file:
                         abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                         for abs_path in abs_path_list:
-                            product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                            try:
+                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                            except Exception:
+                                continue
                             if any(product in product_in_tree for product in product_lst):
                                 if type_lst:
                                     if any(log_type in abs_path for log_type in type_lst):
@@ -1744,7 +1789,10 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                     with z.open(tree_file, 'r') as file:
                         abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                         for abs_path in abs_path_list:
-                            station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            try:
+                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            except Exception:
+                                continue
                             if any(station in station_in_tree for station in station_lst):
                                 if type_lst:
                                     if any(log_type in abs_path for log_type in type_lst):
@@ -1759,7 +1807,10 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                         with z.open(tree_file, 'r') as file:
                             abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                             for abs_path in abs_path_list:
-                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                try:
+                                    product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                except Exception:
+                                    continue
                                 if any(product in product_in_tree for product in product_lst):
                                     if type_lst:
                                         if any(log_type in abs_path for log_type in type_lst):
@@ -1774,7 +1825,10 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                         with z.open(tree_file, 'r') as file:
                             abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                             for abs_path in abs_path_list:
-                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                try:
+                                    station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                except Exception:
+                                    continue
                                 if any(station in station_in_tree for station in station_lst):
                                     if type_lst:
                                         if any(log_type in abs_path for log_type in type_lst):
@@ -1789,8 +1843,11 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                         with z.open(tree_file, 'r') as file:
                             abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                             for abs_path in abs_path_list:
-                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
-                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                try:
+                                    product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                    station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                                except Exception:
+                                    continue
                                 if any(station in station_in_tree for station in station_lst) and any(product in product_in_tree for product in product_lst):
                                     if type_lst:
                                         if any(log_type in abs_path for log_type in type_lst):
@@ -1803,8 +1860,11 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                     with z.open(tree_file, 'r') as file:
                         abs_path_list = list(map(lambda x: x.decode().strip(), file.readlines()))
                         for abs_path in abs_path_list:
-                            product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
-                            station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            try:
+                                product_in_tree = abs_path.split(SEP)[-1].split("_")[2]
+                                station_in_tree = abs_path.split(SEP)[-1].split("_")[5]
+                            except Exception:
+                                continue
                             if any(station in station_in_tree for station in station_lst) and any(product in product_in_tree for product in product_lst):
                                 if type_lst:
                                     if any(log_type in abs_path for log_type in type_lst):
