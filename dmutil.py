@@ -35,7 +35,7 @@ from openpyxl.styles import (
     Alignment
 )
 
-__version__ = '5.0.6'
+__version__ = '5.0.7'
 
 URLS = {
     'Pytorch'            : 'https://pytorch.org/',
@@ -787,28 +787,29 @@ def teewrap(run_time_log):
     def decorator_log_to_file(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            with open(run_time_log, 'w') as f:
-                tee = Tee(sys.stdout, f)
-                stdout_original = sys.stdout 
+            f = open(run_time_log, 'w')
+            tee = Tee(sys.stdout, f)
+            stdout_original = sys.stdout 
 
-                # Redirect stdout to tee(stdout and file)
-                sys.stdout = tee
+            # Redirect stdout to tee(stdout and file)
+            sys.stdout = tee
 
-                # Create a new logger and configure it
-                logger = logging.getLogger()
-                logger.setLevel(logging.DEBUG)
-                handler = logging.StreamHandler(tee)
-                formatter = logging.Formatter('%(asctime)s [%(levelname)s]%(message)s')
-                handler.setFormatter(formatter)
-                logger.addHandler(handler)
-
+            # Create a new logger and configure it
+            logger = logging.getLogger()
+            logger.setLevel(logging.DEBUG)
+            handler = logging.StreamHandler(tee)
+            formatter = logging.Formatter('%(asctime)s [%(levelname)s]%(message)s')
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+            
+            try:
                 result = func(*args, **kwargs)
-
+            finally:
                 # Restore stdout and remove the handler
                 sys.stdout = stdout_original
                 logger.removeHandler(handler)
-
-                return result
+                f.close()
+            return result
         return wrapper
     return decorator_log_to_file
 
@@ -821,14 +822,14 @@ def __logorder__(func):
                 if self.branch:
                     getattr(logging, func.__name__)(msg=f"[{self.branch}] - {msg}")
                 else:
-                    getattr(logging, func.__name__)(msg=f" {msg}")
+                    getattr(logging, func.__name__)(msg=f"{msg}")
             else:
                 if self.branch:
                     getattr(self.logger, func.__name__)(msg=f"[{self.branch}] - {msg}")
                 else:
-                    getattr(self.logger, func.__name__)(msg=f" {msg}")
+                    getattr(self.logger, func.__name__)(msg=f"{msg}")
         else:
-            pass
+            ...
         return func(self, msg)
     return wrapper
 
@@ -855,12 +856,11 @@ class mylogging():
         'error'  : logging.ERROR
     }
 
-    format = '%(asctime)s [%(levelname)s]%(message)s'
-
-    def __init__(self, branch=None, llevel='debug', showlog=True, savelog=None):
+    def __init__(self, branch=None, llevel='debug', showlog=True, savelog=None, format='%(asctime)s [%(levelname)s]%(message)s'):
         self.showlog = showlog
         self.branch = branch
         self.savelog = savelog
+        self.format = format
 
         if not savelog:
             logging.basicConfig(level=self.level_relation[llevel], format=self.format)
@@ -1885,3 +1885,7 @@ CURRENTYEAR     =   int(dt.now().isocalendar()[0])  # current year
 CURRENTWEEK     =   int(dt.now().isocalendar()[1])  # current week
 SYSTEM          =   SYSTEM                          # operation system
 
+
+if __name__ == "__main__":
+    LOG = mylogging(branch="DMUTIL", savelog=f"{CURRENTWORKDIR}{SEP}log.log")
+    LOG.info("This is a test log")
