@@ -1,3 +1,3 @@
-# dmutil
+# dmtoolkit
 
- pip install dmutil-{version}.tar.gz
+ pip install dmtoolkit-{version}.tar.gz
