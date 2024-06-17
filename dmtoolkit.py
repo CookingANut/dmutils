@@ -2,9 +2,9 @@ __version__ = '1.0'
 __author__  = 'daemonh@nvidia.com'
 __date__    = '2024-06-14'
 __all__ = [
-    'dmdescriptor',         '_dmimport',            'GlobalVars', 
-    'is_root',              'win_desktop_path',     'sysc', 
-    'get_path',             'get_all_path',         'resource_path', 
+    'dmdescriptor',         'GlobalVars',           'is_root',              
+    'win_desktop_path',     'sysc',                 'get_path',             
+    'get_all_path',         'resource_path',        'read_treezip',
     'folder_level_X_path',  'get_runtime_path',     'join_path', 
     'get_current_time',     'teewrap',              'dmlogging',
     'timethis',             'CodeTimer',            'mkdir', 
@@ -15,7 +15,6 @@ __all__ = [
     'Py2BAT',               'progressbar',          'merge_dicts', 
     'merge_all_dicts',      'check_your_system',    'traceback_get', 
     'traceback_print',      'exception_get',        'exception_print', 
-    'read_treezip',
 ]
 
 
