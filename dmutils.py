@@ -1,4 +1,4 @@
-__version__ = '1.0'
+__version__ = '1.1'
 __author__  = 'daemonh@nvidia.com'
 __date__    = '2024-06-14'
 __all__ = [
@@ -6,7 +6,7 @@ __all__ = [
     'win_desktop_path',     'sysc',                 'get_path',             
     'get_all_path',         'resource_path',        'read_treezip',
     'folder_level_X_path',  'get_runtime_path',     'join_path', 
-    'get_current_time',     'teewrap',              'dmlogging',
+    'get_current_time',     'teewrap',              'dmlog',
     'timethis',             'CodeTimer',            'mkdir', 
     'dict2json',            'json2dict',            'json2jsone', 
     'dict2jsone',           'openjsone',            'zipreader', 
@@ -877,7 +877,7 @@ def resource_path(filepath):
     return os.path.join(application_path, filepath)
 
 
-def folder_level_X_path(path, level=3):
+def level_x_path(path, level=3):
     """return the level of the path under the given path"""
     ###### import ######
     os  = _dmimport(import_module='os')
@@ -893,7 +893,7 @@ def folder_level_X_path(path, level=3):
         if level == 1:
             path_list.append(com_path)
         else:
-            path_list.extend(folder_level_X_path(com_path, level=level-1))
+            path_list.extend(level_x_path(com_path, level=level-1))
     return path_list
 
 
@@ -1002,7 +1002,7 @@ def __logorder__(func):
         return func(self, msg)
     return wrapper
 
-class dmlogging():
+class dmlog():
     """
     A simpl logging system
     usage:  
@@ -1229,7 +1229,7 @@ def openjsone(jsone_path, key) -> dict:
     with open(jsone_path, "rb") as f:
         return json.loads(Fernet(key).decrypt(f.read()).decode('utf-8'))
 
-class zipreader(object):
+class ZipReader(object):
     """
     open a zip and return a file content
 
@@ -1261,7 +1261,7 @@ class zipreader(object):
         ...
 
 
-class zip2reader(object):
+class Zip2Reader(object):
     """
     open a zip which is inside zip and return a file content
 
@@ -2157,7 +2157,7 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
 
 
 if __name__ == "__main__":
-    LOG = dmlogging(branch="dmtoolkit")
+    LOG = dmlog(branch="dmutils")
     GV = GlobalVars()
     LOG.info(f"date         : {GV.CURRENTDATE}")
     LOG.info(f"system type  : {GV.SYSTEM}")

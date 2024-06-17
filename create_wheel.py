@@ -1,4 +1,4 @@
-from dmtoolkit import (
+from dmutils import (
     __version__, 
     progressbar, 
     sysc, 
@@ -29,7 +29,7 @@ class WheelMaker():
     def __init__(self):
         self.setup_path = join(os.getcwd(), 'setup.py')
         self.dist_path  = join(os.getcwd(), 'dist')
-        self.egg_path   = join(os.getcwd(), 'dmtoolkit.egg-info')
+        self.egg_path   = join(os.getcwd(), 'dmutils.egg-info')
 
     def __call__(self):
         self.auto_build(_progress_bar=None)
@@ -41,14 +41,14 @@ class WheelMaker():
             writecode = lambda code: setup.write(code + '\n')
             writecode("from setuptools import setup")
             writecode("setup(")
-            writecode("    name='dmtoolkit',")
+            writecode("    name='dmutils',")
             writecode("    version='{}',".format(__version__))
             writecode("    author='Daemon Huang',")
             writecode("    author_email='morningrocks@outlook.com',")
             writecode("    url='',")
-            writecode("    install_requires=[],")
+            writecode("    install_requires=['tqdm','openpyxl', 'nuitka', 'cryptography'],")
             writecode("    python_requires='>=3.8',")
-            writecode("    py_modules=['dmtoolkit'],")
+            writecode("    py_modules=['dmutils'],")
             writecode(")")
         _progress_bar.write('temp setup.py creation completed!')
 
