@@ -16,7 +16,8 @@ __all__ = [
     'Py2BAT',               'progressbar',          'merge_dicts', 
     'merge_all_dicts',      'check_your_system',    'traceback_get', 
     'traceback_print',      'exception_get',        'exception_print', 
-    'print_aligned',        'safe_remove'
+    'print_aligned',        'safe_remove',          'dedent',
+    'check_return_code',
 ]
 
 
@@ -804,12 +805,41 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=print):
     )
     OUT = []
     while (line := p.stdout.readline()) != '' or (RC := p.poll()) is None:
+        # if line:
+        #     if outprint:
+        #         printfunction(line.strip())
+        #     OUT.append(line.strip())
+
+        # add \r to overwrite the line for the case taht executing apt-get commands
         if line:
+            stripped_line = line.strip()
             if outprint:
-                printfunction(line.strip())
-            OUT.append(line.strip())
+                printfunction('\r' + stripped_line if printfunction == print else stripped_line)
+            OUT.append(stripped_line)
 
     return OUT, RC
+
+
+def dedent(text: str):
+    """dedent text, remove leading spaces from each line"""
+    ###### import ######
+    textwrap = _dmimport(import_module='textwrap')
+    ####################
+
+    return textwrap.dedent(text)
+
+
+def check_return_code(rc: int, process: str):
+    """check return code, if not 0, exit the program"""
+    ###### import ######
+    sys = _dmimport(import_module='sys')
+    ####################
+
+    if rc != 0:
+        print(f"Execute [{process}] fail, exit.")
+        sys.exit(1)
+    else:
+        print(f"Execute [{process}] success.")
 
 
 def win_command(command):
