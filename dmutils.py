@@ -2228,4 +2228,3 @@ if __name__ == "__main__":
     LOG.info(f"system type  : {GV.SYSTEM}")
     LOG.info(f"workdir      : {GV.CURRENTWORKDIR}")
     safe_remove("./tmp.txt")
-    print(GlobalVars.TESTA)
