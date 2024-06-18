@@ -829,17 +829,18 @@ def dedent(text: str):
     return textwrap.dedent(text)
 
 
-def check_return_code(rc: int, process: str):
+def check_return_code(rc: int, process: str, fprint=print, exit_on_fail=True):
     """check return code, if not 0, exit the program"""
     ###### import ######
     sys = _dmimport(import_module='sys')
     ####################
 
     if rc != 0:
-        print(f"Execute [{process}] fail, exit.")
-        sys.exit(1)
+        fprint(f"Execute [{process}] fail, exit.")
+        if exit_on_fail:
+            sys.exit(1)
     else:
-        print(f"Execute [{process}] success.")
+        fprint(f"Execute [{process}] success.")
 
 
 def win_command(command):
