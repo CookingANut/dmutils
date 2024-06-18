@@ -47,7 +47,7 @@ class WheelMaker():
             writecode("    author_email='morningrocks@outlook.com',")
             writecode("    url='',")
             writecode("    install_requires=['tqdm','openpyxl', 'nuitka', 'cryptography'],")
-            writecode("    python_requires='>=3.8',")
+            writecode("    python_requires='>=3.10',")
             writecode("    py_modules=['dmutils'],")
             writecode(")")
         _progress_bar.write('temp setup.py creation completed!')

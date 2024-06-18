@@ -1,4 +1,4 @@
-__version__ = '1.1'
+__version__ = '1.2'
 __author__  = 'Daemon Huang'
 __email__   = 'morningrocks@outlook.com'
 __date__    = '2024-06-18'
