@@ -1,27 +1,28 @@
 __version__ = '1.1'
-__author__  = 'daemonh@nvidia.com'
-__date__    = '2024-06-14'
+__author__  = 'Daemon Huang'
+__email__   = 'morningrocks@outlook.com'
+__date__    = '2024-06-18'
 __all__ = [
-    'dmdescriptor',         'GlobalVars',           'is_root',              
+    'DmDescriptor',         'GlobalVars',           'is_root',              
     'win_desktop_path',     'sysc',                 'get_path',             
     'get_all_path',         'resource_path',        'read_treezip',
-    'folder_level_X_path',  'get_runtime_path',     'join_path', 
+    'level_X_path',         'get_runtime_path',     'join_path', 
     'get_current_time',     'teewrap',              'dmlog',
     'timethis',             'CodeTimer',            'mkdir', 
     'dict2json',            'json2dict',            'json2jsone', 
-    'dict2jsone',           'openjsone',            'zipreader', 
-    'zip2reader',           'DateTransformer',      'ignored', 
+    'dict2jsone',           'openjsone',            'ZipReader', 
+    'Zip2Reader',           'DateTransformer',      'ignored', 
     'xlsxDesigner',         'xlsxMaker',            'NuitkaMake', 
     'Py2BAT',               'progressbar',          'merge_dicts', 
     'merge_all_dicts',      'check_your_system',    'traceback_get', 
     'traceback_print',      'exception_get',        'exception_print', 
+    'print_aligned',        'safe_remove'
 ]
 
 
-class dmdescriptor:
+class DmDescriptor:
     """
     Descriptor class decorator, you can call class's method without instance and qoute
-    Remember: do not add self into the method
     """
     ###### import ######
     # common
@@ -31,7 +32,16 @@ class dmdescriptor:
         self.func = func
 
     def __get__(self, instance, owner):
-        return self.func()
+        if instance is None:
+            # call from class
+            try:
+                return self.func()
+            except TypeError:
+                print(f"Warning! Make sure to use class level to call [{self.func.__name__}]")
+                return
+        else:
+            # call from instance
+            return self.func(instance)
 
 
 def _dmimport(*, from_module=None, import_module):
@@ -113,7 +123,7 @@ class GlobalVars:
     @property
     def CURRENTDATE(self):
         return self.CURRENTTIME.split(" ")[0]
-    
+
     @property
     def CURRENTWORKDIR(self):
         return self.os.getcwd()
@@ -1130,6 +1140,21 @@ def mkdir(path):
         os.makedirs(path)
 
 
+def safe_remove(file_path):
+    """
+    remove file safely
+    before you use this function, make sure you really want to remove the file
+    """
+    ###### import ######
+    PurePath = _dmimport(from_module="pathlib", import_module='PurePath')
+    Path = _dmimport(from_module="pathlib", import_module='Path')
+    ####################
+
+    if not isinstance(file_path, Path):
+        file_path = Path(PurePath(file_path))
+    file_path.unlink(missing_ok=True)
+
+
 def dict2json(target_dict, json_name, json_path) -> None:
     """"
     dict to json
@@ -1754,7 +1779,16 @@ def merge_all_dicts(dict_container:list):
         return dict_container[0]
     else:
         return {}
+
+
+def print_aligned(string1, string2, align_width):
+    """print string1 aligned with width to string2"""
+    ###### import ######
+    # common
+    ####################
     
+    print(f'{string1:<{align_width}}{string2}')
+
 
 def _test_connection(name, url, timeout=10):
     """Simple connection test"""
@@ -1791,7 +1825,7 @@ def _check_network(region="cn", timeout=10):
     ####################
 
     GV = GlobalVars()
-    print('################## Network Test ##################')
+    print_aligned("[Network Test", "]", 15)
     if timeout > 0:
         print(f'Setting timeout: {timeout}')
         socket.setdefaulttimeout(10)
@@ -1813,7 +1847,7 @@ def _check_python():
     platform = _dmimport(import_module="platform")
     ####################
 
-    print('################## Python ##################')
+    print_aligned("[Python", "]", 15)
     print('Version      :', platform.python_version())
     print('Compiler     :', platform.python_compiler())
     print('Build        :', platform.python_build())
@@ -1826,7 +1860,7 @@ def _check_pip():
     os = _dmimport(import_module="os")
     ####################
 
-    print('################## Pip ##################')
+    print_aligned("[pip", "]", 15)
     try:
         print('Version      :', pip.__version__)
         print('Directory    :', os.path.dirname(pip.__file__))
@@ -1839,7 +1873,7 @@ def _check_pytorch():
     torch = _dmimport(import_module="torch")
     ####################
 
-    print('################## Pytorch ##################')
+    print_aligned("[Pytorch", "]", 15)
     if torch:
         print(torch)
         print('Version      :',torch.__version__)
@@ -1859,7 +1893,7 @@ def _check_mxnet():
     os    = _dmimport(import_module="os")
     ####################
 
-    print('################## MXNet Info ##################')
+    print_aligned("[Mxnet", "]", 15)
     if mxnet:
         def get_build_features_str():
             features = mxnet.runtime.Features()
@@ -1897,7 +1931,7 @@ def _check_os():
     sys      = _dmimport(import_module="sys")
     ####################
 
-    print('################## System ##################')
+    print_aligned("[System", "]", 15)
     print('Platform     :', platform.platform())
     print('system       :', platform.system())
     print('node         :', platform.node())
@@ -1913,7 +1947,7 @@ def _check_hardware():
     subprocess = _dmimport(import_module="subprocess")
     ####################
     
-    print('################## Hardware ##################')
+    print_aligned("[Hardware", "]", 15)
     print('machine      :', platform.machine())
     print('processor    :', platform.processor())
     
@@ -1930,7 +1964,7 @@ def _check_environment():
     os = _dmimport(import_module="os")
     ####################
 
-    print('################## Environment ##################')
+    print_aligned("[Env", "]", 15)
     for k,v in os.environ.items():
         # if k.startswith('MXNET_') or k.startswith('OMP_') or k.startswith('KMP_') or k == 'CC' or k == 'CXX':
             print('{}="{}"'.format(k,v))
@@ -2162,4 +2196,5 @@ if __name__ == "__main__":
     LOG.info(f"date         : {GV.CURRENTDATE}")
     LOG.info(f"system type  : {GV.SYSTEM}")
     LOG.info(f"workdir      : {GV.CURRENTWORKDIR}")
-    check_your_system()
+    safe_remove("./tmp.txt")
+    print(GlobalVars.TESTA)

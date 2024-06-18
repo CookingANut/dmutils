@@ -86,7 +86,7 @@ class WheelMaker():
         _progress_bar.print('installation complete')
 
     @timethis
-    @progressbar(estimated_time=4.5, tstep=0.1, progress_name='Wheel Creating Process')
+    @progressbar(estimated_time=10, tstep=0.1, progress_name='Wheel Creating Process')
     def auto_build(self, _progress_bar):
         """auto run sequence"""
         self.create_setup(_progress_bar)
