@@ -17,8 +17,11 @@ __all__ = [
     'merge_all_dicts',      'check_your_system',    'traceback_get', 
     'traceback_print',      'exception_get',        'exception_print', 
     'print_aligned',        'safe_remove',          'dedent',
-    'check_return_code',    'quickmake',
+    'check_return_code',    'quickmake',            'dmargs',
 ]
+
+
+from typing import Any
 
 
 class DmDescriptor:
@@ -2323,6 +2326,48 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
     os.remove(treezip)
     print("Parsing Tree File Successfully!")
     return path_list
+
+
+class dmargs():
+    """
+    A simple argparse wrapper
+
+    use sample:
+        args = dmargs("description")
+        args.add_arg("-t", "--test", type=int, default=1, help="help docs(default: %(default)s)")
+        args = args()
+
+    then you can use args.test to get the value of the argument
+    """
+
+    def __init__(self, description: str = "") -> None:
+        ###### import ######
+        self.argparse = _dmimport(import_module="argparse")
+        ####################
+
+        self.parser = self.argparse.ArgumentParser(description=description)
+
+    def add_arg(self, *args: any, **kwargs: any) -> None:
+        """
+        - add_arg('-a', '--arg1', type=int, default=1, help="Description for arg1, (default: %(default)s)")
+        - add_arg('-c', '--arg3', type=str, default='', choices=['str1', 'str2', 'str3', 'str4'], help='')
+
+        - add_arg('-f', '--flag', action="store_true", help="Enable some flag")
+            Action: "store_true" means that if the -f or --flag is present in the command line,
+            the corresponding variable is set to True. If not present, it defaults to False.
+            This type of argument is typically used for enabling features or modes.
+
+        - add_arg('-t', '--trial', action=argparse.BooleanOptionalAction, default=False, help='trial build or not, default False')
+            Action: argparse.BooleanOptionalAction allows the argument to be used as a flag that
+            can explicitly set the corresponding variable to True or False. If --trial is used,
+            the variable is set to True. If --no-trial is used, it's set to False. If neither is
+            specified, it defaults to the value provided by the default parameter.
+        """
+        self.parser.add_argument(*args, **kwargs)
+
+    def __call__(self):
+        return self.parser.parse_args()
+
 
 
 if __name__ == "__main__":
