@@ -1655,18 +1655,20 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     """
     ###### import ######
     Path = _dmimport(import_module='pathlib')
+    os   = _dmimport(import_module='os')
     ####################
 
     GV = GlobalVars()
     workdir = GV.CURRENTWORKDIR
     system = GV.SYSTEM
+    mainfile_name, _ = os.path.splitext(os.path.basename(mainfile)) # ideally, _ is '.py' I think.
 
-    safe_remove(f"{workdir}{GV.SEP}{mainfile}.exe")
-    safe_remove(f"{workdir}{GV.SEP}{mainfile}.bin")
-    safe_remove(f"{workdir}{GV.SEP}{mainfile}")
+    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.exe")
+    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.bin")
+    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}")
     # (Path(workdir) / f"{mainfile}{''.join('.exe' if system == 'Windows' else '')}").unlink(missing_ok=True)
     
-    nm = NuitkaMake(f"{workdir}/{mainfile}")
+    nm = NuitkaMake(mainfile)
 
     if onefile:
         nm.ADD_ARG('onefile')
@@ -1691,7 +1693,12 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     nm.MAKE()
 
     if system == 'Linux':
-        sysc(f"mv {mainfile}.bin {mainfile}")
+        src = f"{mainfile_name}.bin"
+        dst = mainfile_name
+        if os.path.exists(src):
+            os.rename(src, dst)
+        else:
+            print(f"Error: The file {src} does not exist.")
 
 
 class Py2BAT():
