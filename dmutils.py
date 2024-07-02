@@ -1654,7 +1654,7 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     include_modules : list, the include modules, example: ['mylibrary.mymodule']
     """
     ###### import ######
-    Path = _dmimport(import_module='pathlib')
+    Path = _dmimport(from_module="pathlib", import_module='Path')
     os   = _dmimport(import_module='os')
     ####################
 
