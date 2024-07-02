@@ -1,4 +1,4 @@
-__version__ = '1.2'
+__version__ = '1.3'
 __author__  = 'Daemon Huang'
 __email__   = 'morningrocks@outlook.com'
 __date__    = '2024-06-18'
@@ -17,7 +17,7 @@ __all__ = [
     'merge_all_dicts',      'check_your_system',    'traceback_get', 
     'traceback_print',      'exception_get',        'exception_print', 
     'print_aligned',        'safe_remove',          'dedent',
-    'check_return_code',
+    'check_return_code',    'quickmake',
 ]
 
 
@@ -144,11 +144,11 @@ class GlobalVars:
     @property
     def URLS(self):
         return {
-            'Pytorch'            : 'https://pytorch.org/',
-            'MXNet'              : 'https://github.com/apache/incubator-mxnet',
-            'FashionMNIST'       : 'https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/train-labels-idx1-ubyte.gz',
-            'PYPI'               : 'https://pypi.python.org/pypi/pip',
-            'Conda'              : 'https://repo.continuum.io/pkgs/free/',
+            'Pytorch'       : 'https://pytorch.org/',
+            'MXNet'         : 'https://github.com/apache/incubator-mxnet',
+            'FashionMNIST'  : 'https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/train-labels-idx1-ubyte.gz',
+            'PYPI'          : 'https://pypi.python.org/pypi/pip',
+            'Conda'         : 'https://repo.continuum.io/pkgs/free/',
         }
 
     @property
@@ -1434,6 +1434,8 @@ class xlsxDesigner():
     font     : str, font
     fontsize : font size
     fontbold : bool, bond font or not
+
+    usage example refer to xlsxMaker.
     """
 
     #  some nice color for choice
@@ -1445,22 +1447,26 @@ class xlsxDesigner():
         'PeriWinkle' : 'CCCCFF'
     }
 
-    def __init__(self, bgcolor="BlueAngel", hzalign="left", font='Candara Light', fontsize='14', fontbold=False):
+    def __init__(self, bgcolor="BlueAngel", hzalign="left", font='Calibri', fontsize='10', fontbold=False):
         ###### import ######
         Border, Side, colors, Font, PatternFill, Alignment = _dmimport(from_module='openpyxl.styles', import_module='Border, Side, colors, Font, PatternFill, Alignment')
         ####################
 
+        # border style
         self.border = Border(
             top    = Side(border_style='thin', color=colors.BLACK),
             bottom = Side(border_style='thin', color=colors.BLACK),
             left   = Side(border_style='thin', color=colors.BLACK),
             right  = Side(border_style='thin', color=colors.BLACK)
         )
+
+        # font style
         self.font = Font(font, size=fontsize, bold=fontbold)
-        try:
-            self.fill = PatternFill('solid', fgColor=self.sggcolor[bgcolor]) 
-        except KeyError:
-            self.fill = PatternFill('solid', fgColor=bgcolor)
+
+        # fill style
+        self.fill = PatternFill('solid', fgColor=self.sggcolor.get(bgcolor, bgcolor))
+
+        # alignment style
         self.alignment = Alignment(horizontal=hzalign, vertical='center') # left, general, right, center
 
 
@@ -1468,11 +1474,21 @@ class xlsxMaker():
     """
     A class for making a xlsx file with openpyxl extension
     
-    create_sheet    : create a xlsx file's sheet
+    create_sheet    : create and return a xlsx file's sheet
     auto_fit_width  : adjust excel's sheet's auto-adaptive width
     write2cell      : write to sheet's cell
     write2mergecell : write to sheet's merge cell
     save            : save xlsx file
+
+    e.g.
+    >>> xm = xlsxMaker()
+    ... xd = xlsxDesigner()
+    ... demo_sheet = xm.create_sheet('demo')
+    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=1, column=1, value="demo1")
+    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=2, column=1, value="demo2")
+    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=1, column=2, value="demo3")
+    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=2, column=2, value="demo4")
+    ... xm.save("demo", "./")
     """
 
     def __init__(self):
@@ -1560,17 +1576,54 @@ class NuitkaMake():
     """
 
     def __init__(self, main):
+        """
+        main is the main file you want to build
+
+        full implementation sample:
+
+        ############## 1 ##############
+        CWD = GV().CURRENTWORKDIR
+        (Path(CWD) / "demo").unlink(missing_ok=True)
+        nm = NuitkaMake(f"{CWD}/demo.py")
+        nm.ADD_ARG('onefile')
+        nm.ADD_ARG(rf'include-data-dir={CWD}/bin=bin')
+        nm.ADD_ARG('standalone')
+        nm.ADD_ARG('remove-output')
+        nm.ADD_ARG(f"output-dir={CWD}")
+        nm.MAKE()
+        sysc("mv demo.bin demo")
+
+        ############## 2 ##############
+        CWD  = CURRENTWORKDIR
+        EXE  = 'autochain'
+        os.system(f"del /f /s /q {EXE}.exe")
+        nm = NuitkaMake("acexe.py")
+        nm.ADD_ARG('onefile')
+        nm.ADD_ARG('standalone')
+        nm.ADD_ARG('remove-output')
+        nm.ADD_ARG('follow-imports')
+        nm.ADD_ARG(f'output-filename="{EXE}"')
+        nm.ADD_ARG(f'output-dir="{CWD}"')
+        nm.ADD_ARG('file-description="autochain"')
+        nm.ADD_ARG('copyright="Copyright (C) 2024 NVIDIA. all right reserved."')
+        nm.ADD_ARG(f'file-version="1.0"')
+        nm.ADD_ARG(f'product-version="1.0"')
+        nm.MAKE()
+        """
         ###### import ######
         self.os = _dmimport(import_module='os')
         ####################
 
         self.GV = GlobalVars()
-        if self.GV.SYSTEM == 'Windows':
-            self.command = 'python -m nuitka'
-        elif self.GV.SYSTEM == 'Linux':
-            self.command = 'python3 -m nuitka'
-        else:
-            raise TypeError('Unsupported system')
+
+        match self.GV.SYSTEM:
+            case 'Windows':
+                self.command = 'python -m nuitka'
+            case 'Linux':
+                self.command = 'python3 -m nuitka'
+            case _:
+                raise TypeError('Unsupported system')
+            
         self.main = main
 
     def ADD_ARG(self, arg):
@@ -1585,6 +1638,57 @@ class NuitkaMake():
     
     def HELP(self):
         print(self.GV.NUITKA_HELP)
+
+
+def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, include_packages=[], include_modules=[]):
+    """
+    Quick build app with Nuitka to current working directory
+
+    mainfile        : str, the main file you want to build
+    onefile         : bool, whether to build as one file
+    include_dir     : str, the include directory
+    include_packages: list, the include packages, example: ['mylibrary']
+    include_modules : list, the include modules, example: ['mylibrary.mymodule']
+    """
+    ###### import ######
+    Path = _dmimport(import_module='pathlib')
+    ####################
+
+    GV = GlobalVars()
+    workdir = GV.CURRENTWORKDIR
+    system = GV.SYSTEM
+
+    safe_remove(f"{workdir}{GV.SEP}{mainfile}.exe")
+    safe_remove(f"{workdir}{GV.SEP}{mainfile}.bin")
+    safe_remove(f"{workdir}{GV.SEP}{mainfile}")
+    # (Path(workdir) / f"{mainfile}{''.join('.exe' if system == 'Windows' else '')}").unlink(missing_ok=True)
+    
+    nm = NuitkaMake(f"{workdir}/{mainfile}")
+
+    if onefile:
+        nm.ADD_ARG('onefile')
+
+    if include_dir:
+        include_dir_path = Path(include_dir)
+        nm.ADD_ARG(rf'include-data-dir={include_dir}={include_dir_path.name}')
+
+    if include_packages:
+        for package in include_packages:
+            # example : nm.ADD_ARG('--include-package=mylibrary')
+            nm.ADD_ARG(f'include-package={package}')
+    
+    if include_modules:
+        for module in include_modules:
+            # example : nm.ADD_ARG('--include-module=mylibrary.mymodule')
+            nm.ADD_ARG(f'include-module={module}')
+
+    nm.ADD_ARG('standalone')
+    nm.ADD_ARG('remove-output')
+    nm.ADD_ARG(f"output-dir={workdir}")
+    nm.MAKE()
+
+    if system == 'Linux':
+        sysc(f"mv {mainfile}.bin {mainfile}")
 
 
 class Py2BAT():
@@ -1812,13 +1916,13 @@ def merge_all_dicts(dict_container:list):
         return {}
 
 
-def print_aligned(string1, string2, align_width):
+def print_aligned(string1, string2, align_width=10, print_func=print):
     """print string1 aligned with width to string2"""
     ###### import ######
     # common
     ####################
     
-    print(f'{string1:<{align_width}}{string2}')
+    print_func(f'{string1:<{align_width}}{string2}')
 
 
 def _test_connection(name, url, timeout=10):
@@ -2217,14 +2321,17 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
                                 else:
                                     path_list.append(abs_path)
     os.remove(treezip)
-    print("Parsing Tree File Successfullly!")
+    print("Parsing Tree File Successfully!")
     return path_list
 
 
 if __name__ == "__main__":
     LOG = dmlog(branch="dmutils")
     GV = GlobalVars()
-    LOG.info(f"date         : {GV.CURRENTDATE}")
-    LOG.info(f"system type  : {GV.SYSTEM}")
-    LOG.info(f"workdir      : {GV.CURRENTWORKDIR}")
+    print_aligned("Version", f": {__version__}", print_func=LOG.info)
+    print_aligned("Author", f": {__author__}", print_func=LOG.info)
+    print_aligned("Email", f": {__email__}", print_func=LOG.info)   
+    print_aligned("date", f": {__date__}", print_func=LOG.info)
+    print_aligned("system", f": {GV.SYSTEM}", print_func=LOG.info)
+    print_aligned("workdir", f": {GV.CURRENTWORKDIR}", print_func=LOG.info)
     safe_remove("./tmp.txt")
