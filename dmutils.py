@@ -1,7 +1,9 @@
-__version__ = '1.3'
+__version__ = '1.4'
 __author__  = 'Daemon Huang'
 __email__   = 'morningrocks@outlook.com'
-__date__    = '2024-06-18'
+__date__    = '2024-07-03'
+
+# used for 'from dmutils import *'
 __all__ = [
     'DmDescriptor',         'GlobalVars',           'is_root',              
     'win_desktop_path',     'sysc',                 'get_path',             
@@ -18,10 +20,8 @@ __all__ = [
     'traceback_print',      'exception_get',        'exception_print', 
     'print_aligned',        'safe_remove',          'dedent',
     'check_return_code',    'quickmake',            'dmargs',
+    'print_k_v_aligned',
 ]
-
-
-from typing import Any
 
 
 class DmDescriptor:
@@ -1935,6 +1935,13 @@ def print_aligned(string1, string2, align_width=10, print_func=print):
     print_func(f'{string1:<{align_width}}{string2}')
 
 
+def print_k_v_aligned(src_dict: dict , print_func=print) -> None:
+    """print dict key and value aligned"""
+    longest_key_length = max(len(key) for key in src_dict.keys())
+    for key, value in src_dict.items():
+        print_func(f"{key.ljust(longest_key_length)} : {value}")
+
+
 def _test_connection(name, url, timeout=10):
     """Simple connection test"""
     ###### import ######
@@ -2354,7 +2361,7 @@ class dmargs():
 
         self.parser = self.argparse.ArgumentParser(description=description)
 
-    def add_arg(self, *args: any, **kwargs: any) -> None:
+    def add_arg(self, *args, **kwargs) -> None:
         """
         - add_arg('-a', '--arg1', type=int, default=1, help="Description for arg1, (default: %(default)s)")
         - add_arg('-c', '--arg3', type=str, default='', choices=['str1', 'str2', 'str3', 'str4'], help='')
