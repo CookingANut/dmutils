@@ -5,7 +5,7 @@
 ## Installation
 
 ``` sh
-pip install dmutils-1.1.tar.gz
+pip install dmutils-x.x.tar.gz
 ```
 
 ## Usage
@@ -13,7 +13,7 @@ pip install dmutils-1.1.tar.gz
 The usage of this module depends on the functions it provides. As a general guide, you can call a function from this module like this:
 
 ```python
-dmutils.function_name(arguments)
+dmutils.func(*arg, **kwargs)
 ```
 
 ## Contributing
