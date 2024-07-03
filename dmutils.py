@@ -1,32 +1,90 @@
-__version__ = '1.4'
-__author__  = 'Daemon Huang'
-__email__   = 'morningrocks@outlook.com'
+# metadata
+__version__ = '1.4'  
+__author__  = 'Daemon Huang'  
+__email__   = 'morningrocks@outlook.com' 
 __date__    = '2024-07-03'
-
-# used for 'from dmutils import *'
+__license__ = 'MIT'
 __all__ = [
-    'DmDescriptor',         'GlobalVars',           'is_root',              
-    'win_desktop_path',     'sysc',                 'get_path',             
-    'get_all_path',         'resource_path',        'read_treezip',
-    'level_X_path',         'get_runtime_path',     'join_path', 
-    'get_current_time',     'teewrap',              'dmlog',
-    'timethis',             'CodeTimer',            'mkdir', 
-    'dict2json',            'json2dict',            'json2jsone', 
-    'dict2jsone',           'openjsone',            'ZipReader', 
-    'Zip2Reader',           'DateTransformer',      'ignored', 
-    'xlsxDesigner',         'xlsxMaker',            'NuitkaMake', 
-    'Py2BAT',               'progressbar',          'merge_dicts', 
-    'merge_all_dicts',      'check_your_system',    'traceback_get', 
-    'traceback_print',      'exception_get',        'exception_print', 
-    'print_aligned',        'safe_remove',          'dedent',
-    'check_return_code',    'quickmake',            'dmargs',
-    'print_k_v_aligned',
+    'DmDescriptor',             # Descriptor class for method management
+    'GlobalVars',               # Class for managing global variables
+    'is_root',                  # Function to check if the current user is root
+    'win_desktop_path',         # Function to get the Windows desktop path
+    'sysc',                     # Function for system calls
+    'get_path',                 # Function to get a specific path
+    'get_all_path',             # Function to get all paths matching a pattern
+    'resource_path',            # Function to get the path of a resource
+    'read_treezip',             # Function to read a tree structure from a zip file
+    'level_x_path',             # Function to get paths at a specific level in a directory tree
+    'get_runtime_path',         # Function to get the runtime path of the application
+    'join_path',                # Function to join paths in a platform-independent way
+    'get_current_time',         # Function to get the current time
+    'teewrap',                  # Function to wrap stdout and stderr
+    'dmlog',                    # simple logging class
+    'timethis',                 # Decorator for timing functions
+    'CodeTimer',                # Class for timing code execution
+    'mkdir',                    # Function to create a directory
+    'dict2json',                # Function to convert a dictionary to a JSON string
+    'json2dict',                # Function to convert a JSON string to a dictionary
+    'json2jsone',               # Function to convert JSON to JSONE (extended JSON)
+    'dict2jsone',               # Function to convert a dictionary to JSONE
+    'openjsone',                # Function to open a JSONE file
+    'ZipReader',                # Class for reading zip files
+    'Zip2Reader',               # Class for reading zip inside a zip
+    'DateTransformer',          # Class for transforming dates
+    'ignored',                  # Function to ignore specified exceptions
+    'xlsxDesigner',             # Class for designing Excel files
+    'xlsxMaker',                # Class for creating Excel files
+    'NuitkaMake',               # Class to compile Python code with Nuitka
+    'Py2BAT',                   # Class to convert Python scripts to batch files
+    'progressbar',              # Function to display a progress bar
+    'merge_dicts',              # Function to merge dictionaries
+    'merge_all_dicts',          # Function to merge multiple dictionaries
+    'check_your_system',        # Function to check the system's compatibility
+    'traceback_get',            # Function to get traceback information
+    'traceback_print',          # Function to print traceback information
+    'exception_get',            # Function to get exception information
+    'exception_print',          # Function to print exception information
+    'print_aligned',            # Function to print aligned text
+    'safe_remove',              # Function to safely remove files or directories
+    'dedent',                   # Function to remove indentation from strings
+    'check_return_code',        # Function to check the return code of a process
+    'quickmake',                # Function for quick project setup
+    'dmargs',                   # Class for parsing command-line arguments
+    'print_k_v_aligned',        # Function to print keys and values aligned
 ]
 
 
 class DmDescriptor:
     """
-    Descriptor class decorator, you can call class's method without instance and qoute
+    A descriptor for enabling class methods to be called without an instance.
+
+    This descriptor allows class methods decorated with it to be called either from an instance
+    or directly from the class. If called from the class, it attempts to execute the method without
+    any arguments. If called from an instance, it passes the instance as the first argument to the method.
+
+    Attributes:
+        func (callable): The function that is wrapped by the descriptor.
+
+    Usage:
+        To use this descriptor, decorate a method in a class with an instance of `DmDescriptor`.
+
+        Example:
+            class MyClass:
+                @DmDescriptor
+                def my_method(cls):
+                    # Implementation of the method
+
+            # Calling the method on the class directly
+            MyClass.my_method()
+
+            # Calling the method on an instance of the class
+            instance = MyClass()
+            instance.my_method()
+
+    Note:
+        If the method is called directly from the class and requires arguments, a TypeError will be raised.
+        Ensure that methods using this descriptor can handle being called with no arguments if they are to be
+        called from the class level.
     """
     ###### import ######
     # common
@@ -50,19 +108,33 @@ class DmDescriptor:
 
 def _dmimport(*, from_module=None, import_module):
     """
-    Import a module or specific attributes from a module.
+    Dynamically imports a module or specific attributes from a module.
 
-    Parameters:
-    from_module (str): The name of the module to import from. If None, import_module is treated as a module name.
-    import_module (str): The name of the module or attributes to import. 
-                         If from_module is None, this is treated as a module name. 
-                         If from_module is not None, this is treated as a comma-separated list of attribute names.
+    This function allows for dynamic importation of modules or specific attributes by specifying
+    either the module name or a comma-separated list of attribute names. It gracefully handles
+    import failures by returning `None` for failed imports or an error message and exception object
+    for other errors.
+
+    Args:
+        from_module (str, optional): The name of the module to import from. If `None`, treats
+            `import_module` as a module name.
+        import_module (str): The name of the module or attributes to import. If `from_module` is
+            `None`, this is treated as a module name. Otherwise, it's treated as a comma-separated
+            list of attribute names.
 
     Returns:
-    list: A list of imported modules or attributes. 
-            If a module or attribute cannot be imported, None is returned in its place. 
-            If an error occurs during import, the first element of the list will be a string describing the error, 
-            and the second element will be the exception object.
+        list: A list of imported modules or attributes. Returns `None` for failed imports or a list
+            containing an error message and exception object for other errors.
+
+    Raises:
+        ModuleNotFoundError: If the specified module or any attributes cannot be found.
+        Exception: For any other errors that occur during the import process.
+
+    Example:
+        >>> _dmimport(from_module="os", import_module="path, getenv")
+        [<module 'posixpath'>, <function getenv>]
+        >>> _dmimport(import_module="json")
+        <module 'json'>
     """
     ###### import ######
     # common
@@ -92,22 +164,30 @@ def _dmimport(*, from_module=None, import_module):
 
 
 class GlobalVars:
+    """
+    Hold global variables and configurations for this module.
+
+    Attributes:
+        os (module): Dynamically imported `os` module for OS-related operations.
+        time (module): Dynamically imported `time` module for time-related operations.
+        dt (module): Dynamically imported `datetime.datetime` for date and time operations.
+        platform (module): Dynamically imported `platform` module for platform-related information.
+        textwrap (module): Dynamically imported `textwrap` module for text wrapping and formatting.
+
+    Properties:
+        SEP (str): The path separator specific to the operating system.
+        CURRENTTIME (str): The current time formatted as "YYYY-MM-DD HH:MM:SS".
+        CURRENTDATE (str): The current date in "YYYY-MM-DD" format.
+        CURRENTWORKDIR (str): The current working directory.
+        CURRENTYEAR (int): The current year.
+        CURRENTWEEK (int): The current week number of the year.
+        SYSTEM (str): The name of the operating system.
+        URLS (dict): A dictionary of useful URLs.
+        REGIONAL_URLS (dict): A dictionary containing regional URLs.
+        BATHEADER (str): A batch script header for Windows that switches stdout to the Python console.
+        NUITKA_HELP (str): Help text for Nuitka options.
+    """
     def __init__(self):
-        """
-        global variables for this module
-        
-        SEP
-        CURRENTTIME
-        CURRENTDATE
-        CURRENTWORKDIR
-        CURRENTYEAR
-        CURRENTWEEK
-        SYSTEM
-        URLS
-        REGIONAL_URLS
-        BATHEADER
-        NUITKA_HELP
-        """
         ###### import ######
         self.os         = _dmimport(import_module='os')
         self.time       = _dmimport(import_module='time')
@@ -764,7 +844,18 @@ class GlobalVars:
     
 
 def is_root():
-    """check if you are root or not"""
+    """
+    Checks if the current user is the root user.
+
+    Returns:
+        bool: True if the current user is root, False otherwise.
+
+    Usage:
+        >>> if is_root():
+        ...     print("Running as root.")
+        ... else:
+        ...     print("Not running as root.")
+    """
     ###### import ######
     os = _dmimport(import_module='os')
     ####################
@@ -773,7 +864,17 @@ def is_root():
 
 
 def win_desktop_path():
-    """return your desktop path"""
+    """
+    Retrieves the path to the current user's desktop in Windows.
+
+    Returns:
+        str: The absolute path to the current user's desktop.
+
+    Usage:
+        >>> desktop_path = win_desktop_path()
+        >>> print(desktop_path)
+        This will print the path to the desktop of the current user, such as "C:\\Users\\Username\\Desktop".
+    """
     ###### import ######
     winreg = _dmimport(import_module='winreg')
     ####################
@@ -784,15 +885,29 @@ def win_desktop_path():
 
 def sysc(command: str, cwd=None, outprint=True, printfunction=print):
     """
-    Combine win_command and bash_command into one unify function
-    - use p.stdout to get output instead of p.communicate to have a real time output
-    - use p.poll() to check if the process is still running or not
-    - return output -> list and return code
+    Executes a system command and optionally prints its output in real-time.
 
-    command : str, your running command in system
-    cwd     : str, you commmand running working directory
-    outprint: bool, whether to print
-    printfunction : func, print function, default is print
+    Args:
+        command (str): The system command to be executed.
+        cwd (str, optional): The working directory in which the command should be executed. Defaults to None, which uses the current working directory.
+        outprint (bool, optional): Flag indicating whether to print the command's output in real-time. Defaults to True.
+        printfunction (callable, optional): A custom print function to use for printing the command's output. Defaults to the built-in print function.
+
+    Returns:
+        tuple: A tuple containing two elements:
+            - A list of strings, each representing a line of output from the command.
+            - An integer representing the command's return code.
+
+    Usage:
+        >>> output, return_code = sysc("echo Hello, World!")
+        >>> print(output)
+        This will print ["Hello, World!"] and the command's output to stdout.
+
+    Note:
+        Combine win_command and bash_command into one unify function
+        - use p.stdout to get output instead of p.communicate to have a real time output
+        - use p.poll() to check if the process is still running or not
+        - return output -> list and return code
     """
     ###### import ######
     subprocess = _dmimport(import_module='subprocess')
@@ -880,7 +995,20 @@ def bash_command(command):
 
 
 def get_path(path):
-    """generate all abs path under the given path, return a generator"""
+    """
+    Generates absolute paths for all files under a given directory.
+
+    Args:
+        path (str): The root directory path from which to start generating file paths.
+
+    Yields:
+        str: The next absolute path to a file within the given directory or its subdirectories.
+
+    Usage:
+        >>> for file_path in get_path("/path/to/directory"):
+        ...     print(file_path)
+        This will print the absolute paths to all files within "/path/to/directory" and its subdirectories.
+    """
     ###### import ######
     os = _dmimport(import_module='os')
     ####################
@@ -891,7 +1019,20 @@ def get_path(path):
 
 
 def get_all_path(rootdir):
-    """return all files abs paths in the given directory, return a list"""
+    """
+    Recursively retrieves all file paths within a given directory.
+
+    Args:
+        rootdir (str): The root directory from which to start collecting file paths.
+
+    Returns:
+        list: A list of absolute paths to all files within the given directory and its subdirectories.
+
+    Usage:
+        >>> file_paths = get_all_path("/path/to/directory")
+        >>> print(file_paths)
+        This will print a list of absolute paths to all files within "/path/to/directory" and its subdirectories.
+    """
     ###### import ######
     os = _dmimport(import_module='os')
     ####################
@@ -908,7 +1049,27 @@ def get_all_path(rootdir):
 
 
 def resource_path(filepath):
-    """return absolute path if your file is under executable"""
+    """
+    Constructs an absolute path to a resource, intended for use in a PyInstaller bundle.
+
+    This function dynamically imports the `sys` and `os` modules to determine the absolute path of a given file. 
+    It is particularly useful when working with PyInstaller, where the file structure of a bundled application differs from that of a script during development.
+
+    Args:
+        filepath (str): The relative path to the file for which the absolute path is desired.
+
+    Returns:
+        str: The absolute path to the file.
+
+    Usage:
+        >>> abs_path = resource_path("data/config.json")
+        >>> print(abs_path)
+        This will print the absolute path to "config.json", which is useful when the script is bundled into an executable.
+
+    Note:
+        The function checks if the script is running in a bundled application by checking `sys.frozen`. 
+        If so, it sets the base path to the directory of the executable; otherwise, it uses the directory of the script file.
+    """
     ###### import ######
     sys = _dmimport(import_module='sys')
     os  = _dmimport(import_module='os')
@@ -922,7 +1083,24 @@ def resource_path(filepath):
 
 
 def level_x_path(path, level=3):
-    """return the level of the path under the given path"""
+    """
+    Recursively retrieves paths up to a specified depth level from a given root path.
+
+    This function traverses a directory tree starting from a specified root path (`path`) and collects paths up to a specified depth level (`level`). 
+    It dynamically imports the `os` module to handle file system paths and operations.
+
+    Args:
+        path (str): The root directory path from which to start the traversal.
+        level (int, optional): The depth level to which the traversal should proceed. Defaults to 3.
+
+    Returns:
+        list: A list of paths collected up to the specified depth level.
+
+    Usage:
+        >>> paths = level_x_path("/path/to/directory", level=2)
+        >>> print(paths)
+        This will print a list of paths up to a depth of 2 levels from "/path/to/directory".
+    """
     ###### import ######
     os  = _dmimport(import_module='os')
     ####################
@@ -942,7 +1120,17 @@ def level_x_path(path, level=3):
 
 
 def get_runtime_path():
-    """return Current directory path"""
+    """
+    Returns the current working directory path.
+
+    Returns:
+        str: The path of the current working directory.
+
+    Usage:
+        >>> current_path = get_runtime_path()
+        >>> print(current_path)
+        This will print the absolute path of the current working directory.
+    """
     ###### import ######
     os  = _dmimport(import_module='os')
     ####################
@@ -951,7 +1139,21 @@ def get_runtime_path():
 
 
 def join_path(path, file):
-    """fake os.path.join method"""
+    """
+    Joins a directory path and a file name into a single path.
+
+    Args:
+        path (str): The directory path.
+        file_name (str): The name of the file.
+
+    Returns:
+        str: The combined path, which consists of the directory path and the file name.
+
+    Usage:
+        >>> combined_path = join_path("/path/to/directory", "file.txt")
+        >>> print(combined_path)
+        This will print "/path/to/directory/file.txt" on Unix-like systems or "\\path\\to\\directory\\file.txt" on Windows.
+    """
     ###### import ######
     os  = _dmimport(import_module='os')
     ####################
@@ -961,8 +1163,18 @@ def join_path(path, file):
 
 def get_current_time(format="%Y-%m-%d %H:%M:%S"):
     """
-    return Current time format in string
-    default format: %Y-%m-%d %H:%M:%S
+    Returns the current local time as a formatted string.
+
+    Args:
+        format (str, optional): The format string for strftime. Defaults to "%Y-%m-%d %H:%M:%S".
+
+    Returns:
+        str: The current local time formatted according to the specified format string.
+
+    Usage:
+        >>> current_time = get_current_time()
+        >>> print(current_time)
+        This will print the current local time formatted as "YYYY-MM-DD HH:MM:SS".
     """
     ###### import ######
     time  = _dmimport(import_module='time')
@@ -970,7 +1182,24 @@ def get_current_time(format="%Y-%m-%d %H:%M:%S"):
 
     return time.strftime(format, time.localtime())
 
+
 class Tee:
+    """
+    A class that duplicates output to multiple file-like objects.
+
+    Usage:
+        >>> import sys
+        >>> log_file = open("logfile.txt", "a")
+        >>> tee = Tee(sys.stdout, log_file)
+        >>> print("This message will go to stdout and logfile.txt", file=tee)
+
+    Args:
+        *files: Variable length argument list of file-like objects to which output will be duplicated.
+
+    Methods:
+        write(obj): Writes `obj` to all file-like objects passed during initialization.
+        flush(): Flushes all file-like objects passed during initialization.
+    """
     def __init__(self, *files):
         ###### import ######
         # common
@@ -987,6 +1216,23 @@ class Tee:
 
 
 def teewrap(run_time_log):
+    """
+    A decorator factory that logs the output of the decorated function to both stdout and a specified log file.
+
+    This function returns a decorator that, when applied to another function, 
+    will redirect the standard output (stdout) of that function to both the console and a specified log file. 
+    It also configures a logger to log messages with a specific format to the same destinations.
+
+    Usage:
+        >>> @teewrap("path/to/runtime.log")
+        ... def my_function():
+        ...     print("This message will be logged to both stdout and the log file.")
+        ...
+        >>> my_function()
+
+    Args:
+        run_time_log (str): The path to the log file where the output and log messages should be written.
+    """
     ###### import ######
     functools  = _dmimport(import_module='functools')
     sys        = _dmimport(import_module='sys')
@@ -1024,7 +1270,7 @@ def teewrap(run_time_log):
 
 
 def __logorder__(func):
-    """build in wrapper for mylogging, user do not use"""
+    """builtin wrapper for dmlog class, do not use it directly"""
     ###### import ######
     logging    = _dmimport(import_module='logging')
     ####################
@@ -1046,20 +1292,24 @@ def __logorder__(func):
         return func(self, msg)
     return wrapper
 
+
 class dmlog():
     """
-    A simpl logging system
-    usage:  
-    >>> log = mylogging()
-    ... log.info
-    ... log.warning
-    ... log.error
-    ... log.debug 
+    A simple logging system.
 
-    branch : str, the log branch name in logging
-    llevel : str, the shown log level in logging
-    showlog: bool, the switch to enable log or not
-    savelog: str/None, save log to a cerain directory
+    Usage:
+        >>> log = dmlog(branch="example", llevel="debug", showlog=True, savelog="path/to/logfile.log")
+        >>> log.info("This is an info message.")
+        >>> log.warning("This is a warning message.")
+        >>> log.error("This is an error message.")
+        >>> log.debug("This is a debug message.")
+
+    Args:
+        branch (str, optional): The log branch name. Defaults to None.
+        llevel (str, optional): The log level as a string. Defaults to 'debug'.
+        showlog (bool, optional): Whether to show logs in the console. Defaults to True.
+        savelog (str or None, optional): The path to save the log file to. If None, logs are not saved. Defaults to None.
+        format (str, optional): The format string for log messages. Defaults to '%(asctime)s [%(levelname)s]%(message)s'.
     """
 
     def __init__(self, branch=None, llevel='debug', showlog=True, savelog=None, format='%(asctime)s [%(levelname)s]%(message)s'):
@@ -1119,11 +1369,20 @@ class dmlog():
 
 def timethis(func):
     """
-    A wrapper for counting functions time spent
-    
-    >>> @timethis
-    ... def YouFunction(*args, **kwargs):
-    ...    ...
+    Decorator for measuring the execution time of a function.
+
+    Args:
+        func (Callable): The function to be wrapped by the decorator.
+
+    Returns:
+        Callable: The wrapped function with added timing functionality.
+
+    Example:
+        >>> @timethis
+        ... def your_function(*args, **kwargs):
+        ...     # function implementation
+        ...
+        This will print the execution time of `your_function` each time it is called.
     """
     ###### import ######
     time = _dmimport(import_module='time')
@@ -1140,12 +1399,17 @@ def timethis(func):
 
 class CodeTimer(object):
     """
-    Class for counting functions time spent
-    >>> with CodeTimer():
-    ...     ... # your codes here
-    ...     ... 
-    """
+    A context manager for measuring the execution time of a code block.
 
+    Args:
+        keep_num (int, optional): The number of decimal places to round the running time to. Defaults to 3.
+
+    Examples:
+        >>> with CodeTimer():
+        ...     # your code here
+        ...
+        Running time: X.XXXsec
+    """
     def __init__(self, keep_num=3):
         ###### import ######
         self.time = _dmimport(import_module='time')
@@ -1164,7 +1428,15 @@ class CodeTimer(object):
 
 
 def mkdir(path):
-    """create directorys for the given path"""
+    """
+    Creates directories for the given path if they do not already exist.
+
+    Args:
+        path (str): The file system path where the directory (or directories) should be created.
+
+    Note:
+        This function dynamically imports the `os` module to ensure that directory creation is handled in a platform-independent manner.
+    """
     ###### import ######
     os = _dmimport(import_module='os')
     ####################
@@ -1176,8 +1448,13 @@ def mkdir(path):
 
 def safe_remove(file_path):
     """
-    remove file safely
-    before you use this function, make sure you really want to remove the file
+    Safely removes a file at the specified path.
+
+    Args:
+        file_path (str or Path): The path to the file to be removed. Can be a string or a `Path` object.
+
+    Note:
+        Before using this function, ensure that the file is intended to be permanently deleted.
     """
     ###### import ######
     PurePath = _dmimport(from_module="pathlib", import_module='PurePath')
@@ -1190,12 +1467,13 @@ def safe_remove(file_path):
 
 
 def dict2json(target_dict, json_name, json_path) -> None:
-    """"
-    dict to json
+    """
+    Converts a dictionary to a JSON file and saves it to the specified path.
 
-    target_dict: dict, the dict you want to convert to json
-    json_name  : str, the name of the json file
-    json_path  : str, the path to the json file 
+    Args:
+        target_dict (dict): The dictionary to convert to JSON.
+        json_name (str): The name of the JSON file to create, without the extension.
+        json_path (str): The path where the JSON file will be saved.
     """
     ###### import ######
     os   = _dmimport(import_module='os')
@@ -1211,7 +1489,20 @@ def dict2json(target_dict, json_name, json_path) -> None:
 
 
 def json2dict(json_path) -> dict:
-    """"json to dict"""
+    """
+    Converts a JSON file to a dictionary.
+
+    Args:
+        json_path (str): The file path of the JSON file to be converted.
+
+    Returns:
+        dict: The contents of the JSON file as a Python dictionary.
+
+    Example:
+        >>> my_dict = json2dict("path/to/myfile.json")
+        >>> print(my_dict)
+        This will print the contents of "myfile.json" as a dictionary.
+    """
     ###### import ######
     json = _dmimport(import_module='json')
     ####################
@@ -1221,12 +1512,24 @@ def json2dict(json_path) -> dict:
     
 
 def json2jsone(json_path: str, jsone_path: str):
-    """ 
-    Encrypt json file 
-    please make sure to send full jsone path(including name) for parameter 
+    """
+    Encrypts a JSON file and saves it as a .jsone file.
 
-    json_path : str, the json file you want to encrypt
-    jsone_path: str, the jsone file you want to save
+    This function takes the path to a JSON file, encrypts its contents using Fernet symmetric encryption, 
+    and saves the encrypted data to a specified path with a .jsone extension. It prints the path to the encrypted file and the decryption key upon completion.
+
+    Args:
+        json_path (str): The file path to the JSON file to be encrypted.
+        jsone_path (str): The full path (including the file name) where the encrypted file (.jsone) will be saved.
+
+    Note:
+        - The function dynamically imports the `Fernet` class from the `cryptography.fernet` module for encryption and the `json` module for handling JSON data.
+        - A new encryption key is generated each time the function is called. This key is required for decrypting the .jsone file.
+
+    Example:
+        >>> json2jsone("path/to/myfile.json", "path/to/myfile.jsone")
+        This will encrypt "myfile.json" and save it as "myfile.jsone" in the specified path. 
+        The path to the encrypted file and the decryption key are printed to the console.
     """
     ###### import ######
     Fernet = _dmimport(from_module='cryptography.fernet', import_module='Fernet')
@@ -1249,11 +1552,26 @@ def json2jsone(json_path: str, jsone_path: str):
 
 def dict2jsone(target_dict, jsone_name, jsone_path):
     """
-    Ecrypt dict to jsone encrypted file
+    Encrypts a dictionary and saves it as a .jsone file.
 
-    target_dict: dict
-    jsone_name : str, the name of the jsone file
-    jsone_path : str, the generated path of the jsone file
+    This function takes a dictionary, encrypts it using Fernet symmetric encryption, 
+    and saves the encrypted data to a file with a .jsone extension at the specified path. 
+    It prints the path to the encrypted file and the decryption key upon completion.
+
+    Args:
+        target_dict (dict): The dictionary to encrypt.
+        jsone_name (str): The name of the .jsone file to create, without the extension.
+        jsone_path (str): The path where the .jsone file will be saved.
+
+    Note:
+        - The function dynamically imports the `Fernet` class from the `cryptography.fernet` module for encryption and the `json` module for serialization.
+        - The encryption key is generated using `Fernet.generate_key()`.
+        - The encrypted data and the key are printed to the console. The key is required for decryption.
+
+    Example:
+        >>> my_dict = {"key": "value"}
+        >>> dict2jsone(my_dict, "encrypted_data", "/path/to/save")
+        This will create an encrypted file named "encrypted_data.jsone" in "/path/to/save" and print the path and decryption key.
     """
     ###### import ######
     Fernet = _dmimport(from_module='cryptography.fernet', import_module='Fernet')
@@ -1274,11 +1592,29 @@ def dict2jsone(target_dict, jsone_name, jsone_path):
 
 
 def openjsone(jsone_path, key) -> dict:
-    """ 
-    Open encrypted json file 
+    """
+    Opens and decrypts an encrypted JSON file, returning its contents as a dictionary.
 
-    jsone_path: str, jsone file path
-    key       : byte string, Fernet key for this jsone file  
+    This function is designed to handle JSON files that have been encrypted using the Fernet symmetric encryption. 
+    It requires the path to the encrypted JSON file and the Fernet key used for encryption. 
+    The function decrypts the file and parses the JSON content into a Python dictionary.
+
+    Args:
+        jsone_path (str): The file path to the encrypted JSON file.
+        key (bytes): The Fernet key used to encrypt the JSON file. This should be a byte string.
+
+    Returns:
+        dict: The decrypted and parsed contents of the JSON file.
+
+    Example:
+        >>> key = b'my_fernet_key'
+        >>> jsone_path = 'path/to/encrypted_file.jsone'
+        >>> content = openjsone(jsone_path, key)
+        >>> print(content)
+        This will print the decrypted content of the encrypted JSON file.
+
+    Note:
+        This function dynamically imports the `Fernet` class from the `cryptography.fernet` module and the `json` module for decryption and parsing, respectively.
     """
     ###### import ######
     Fernet = _dmimport(from_module='cryptography.fernet', import_module='Fernet')
@@ -1288,18 +1624,26 @@ def openjsone(jsone_path, key) -> dict:
     with open(jsone_path, "rb") as f:
         return json.loads(Fernet(key).decrypt(f.read()).decode('utf-8'))
 
-class ZipReader(object):
+
+class ZipReader:
     """
-    open a zip and return a file content
+    A class for reading and extracting the contents of a specific file within a zip archive.
 
-    zippath    : str, the path of the zip file
-    filekeyword: str, the file path in the zip you want to open
-    
-    TODO: currently only open one file?
+    This class is designed to open a zip file, search for a file within the zip archive that matches a given keyword, and read the contents of that file.
 
-    >>> with zipreader(zippath, filekeyword) as z:
-    ...     ...
-    z is content list now
+    Attributes:
+        zipfile (module): The zipfile module, dynamically imported for handling zip files.
+        content (list of str): The lines of the specified file within the zip archive, decoded to strings.
+
+    Args:
+        zippath (str): The path to the zip file.
+        filekeyword (str): The keyword to identify the specific file within the zip archive.
+
+    Examples:
+        >>> with ZipReader(zippath="example.zip", filekeyword="targetfile.txt") as content:
+        ...     for line in content:
+        ...         print(line)
+        This will print each line of the file named "targetfile.txt" (or contains "targetfile.txt" in its name) within "example.zip".
     """
 
     def __init__(self, zippath, filekeyword):
@@ -1322,15 +1666,27 @@ class ZipReader(object):
 
 class Zip2Reader(object):
     """
-    open a zip which is inside zip and return a file content
+    A class for reading the contents of a file within a zip file that is itself contained within another zip file.
 
-    zippath    : str, the path of the zip file
-    subziptype : str, the type of the zip inside the zip file
-    filekeyword: str, the file path in the zip you want to open
+    Attributes:
+        zipfile (module): The zipfile module, dynamically imported.
+        BytesIO (class): The BytesIO class from the io module, dynamically imported.
+        content (list of str): The lines of the file specified by `filekeyword`, decoded to strings.
 
-    >>> with zip2reader(zippath, subziptype='zip', filekeyword='.log') as z:
-    ...     ...
-    z is content list now
+    Args:
+        zippath (str): The path of the outer zip file.
+        subziptype (str, optional): The file extension of the inner zip file. Defaults to 'zip'.
+        filekeyword (str, optional): A keyword to identify the specific file within the inner zip file. Defaults to an empty string.
+
+    Examples:
+        >>> with Zip2Reader(zippath="path/to/outer.zip", subziptype="zip", filekeyword=".log") as content:
+        ...     for line in content:
+        ...         print(line)
+        This will print each line of the .log file contained within the inner zip file.
+
+    Note:
+        The class uses context manager protocols (`__enter__` and `__exit__`) 
+        to facilitate easy use with the `with` statement, ensuring resources are managed efficiently.
     """
 
     def __init__(self, zippath, subziptype='zip', filekeyword=''):
@@ -1355,27 +1711,45 @@ class Zip2Reader(object):
 
 class DateTransformer():
     """
-    Date string transformation
+    A class for transforming date strings into various formats and extracting date-related information.
 
-    >>> DTF = DateTransformer("2023-07-27")
-    >>> DTF.year
-    2023
-    >>> DTF.month
-    7
-    >>> DTF.week
-    30
-    >>> DTF.quarter
-    2
-    >>> DTF.yaerweek
-    2023W30
-    >>> DTF.yearmonth
-    2023M07
-    >>> DTF.yearquarter
-    2023Q2
-    >>> DTF.timestamp
-    1690387200
-    >>> DTF.weekday
-    4
+    This class takes a date string as input and provides properties to access the 
+    year, month, week number, quarter, and other date-related information in various formats.
+
+    Attributes:
+        dt (module): The datetime module, dynamically imported.
+        time (module): The time module, dynamically imported.
+        to_Tdate (date): The input date string converted to a date object.
+        year (int): The year extracted from the input date.
+        week (int): The ISO week number extracted from the input date.
+        month (int): The month extracted from the input date.
+        quarter (int): The quarter of the year extracted from the input date.
+        weekday (int): The ISO weekday number extracted from the input date.
+        yearweek (str): The year and ISO week number in 'YYYYWww' format.
+        yearmonth (str): The year and month in 'YYYYMmm' format.
+        yearquarter (str): The year and quarter in 'YYYYQq' format.
+        timestamp (int): The Unix timestamp corresponding to the input date.
+
+    Examples:
+        >>> DTF = DateTransformer("2023-07-27")
+        >>> DTF.year
+        2023
+        >>> DTF.month
+        7
+        >>> DTF.week
+        30
+        >>> DTF.quarter
+        2
+        >>> DTF.yearweek
+        '2023W30'
+        >>> DTF.yearmonth
+        '2023M07'
+        >>> DTF.yearquarter
+        '2023Q2'
+        >>> DTF.timestamp
+        1690387200
+        >>> DTF.weekday
+        4
     """
     def __init__(self, datestring):
         ###### import ######
@@ -1408,15 +1782,27 @@ class DateTransformer():
 @_dmimport(from_module='contextlib', import_module='contextmanager')
 def ignored(exception=Exception, func=lambda:None, **kwargs):
     """
-    >>> with ignored(exception=Exception, func=SomeFunction, **kwargs):
-    ...     ... # some codes here
-    ...     ...  
-    
-    same as:
-    >>> try: 
-    ...     ... # some code here
-    ... except Exception
-    ...     SomeFunction(**kwargs)
+    A context manager that ignores specified exceptions and optionally executes a callback function.
+
+    This function allows code to be executed within a context block, ignoring specified exceptions. 
+    If an exception is caught, an optional callback function can be executed with provided keyword arguments.
+
+    Args:
+        exception (Exception, optional): The exception type to ignore. Defaults to Exception.
+        func (callable, optional): A callback function to execute if the exception is caught. Defaults to a lambda function that does nothing.
+        **kwargs: Arbitrary keyword arguments passed to the callback function upon execution.
+
+    Yields:
+        None: This context manager does not provide a direct value upon entering the context.
+
+    Examples:
+        >>> with ignored(exception=ValueError, func=print, message="Error ignored"):
+        ...     int("not a number")
+        ...     print("This will not print if a ValueError is raised.")
+        >>> # If a ValueError occurs, "Error ignored" will be printed to the console.
+
+    Note:
+        This context manager is useful for cases where certain exceptions can be safely ignored, and optional cleanup or logging actions need to be performed.
     """
     ###### import ######
     # common
@@ -1475,23 +1861,38 @@ class xlsxDesigner():
 
 class xlsxMaker():
     """
-    A class for making a xlsx file with openpyxl extension
-    
-    create_sheet    : create and return a xlsx file's sheet
-    auto_fit_width  : adjust excel's sheet's auto-adaptive width
-    write2cell      : write to sheet's cell
-    write2mergecell : write to sheet's merge cell
-    save            : save xlsx file
+    A class for creating and manipulating xlsx files using the openpyxl library.
 
-    e.g.
-    >>> xm = xlsxMaker()
-    ... xd = xlsxDesigner()
-    ... demo_sheet = xm.create_sheet('demo')
-    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=1, column=1, value="demo1")
-    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=2, column=1, value="demo2")
-    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=1, column=2, value="demo3")
-    ... xm.wirte2cell(sheet=demo_sheet, design=xd, row=2, column=2, value="demo4")
-    ... xm.save("demo", "./")
+    This class provides methods to create sheets, write to cells, merge cells, and automatically adjust column widths in an Excel file.
+
+    Attributes:
+        wb (Workbook): An openpyxl Workbook object.
+
+    Methods:
+        create_sheet(sheetname='undefine'):
+            Creates a new sheet in the workbook with the given name.
+
+        auto_fit_width(excel_name: str, sheet_name: str):
+            Automatically adjusts the width of all columns in the specified sheet.
+
+        write2cell(sheet, design, row, column, value, fill=False):
+            Writes a value to a specific cell and applies formatting from a design object.
+
+        write2mergecell(sheet, design, start_row, end_row, start_column, end_column, value, fill=False):
+            Writes a value to a range of merged cells and applies formatting from a design object.
+
+        save(xlsxname, xlsxpath, allautowidth=True):
+            Saves the workbook to a specified path and optionally adjusts column widths in all sheets.
+
+    Examples:
+        >>> xm = xlsxMaker()
+        >>> xd = xlsxDesigner()
+        >>> demo_sheet = xm.create_sheet('demo')
+        >>> xm.write2cell(sheet=demo_sheet, design=xd, row=1, column=1, value="demo1")
+        >>> xm.write2cell(sheet=demo_sheet, design=xd, row=2, column=1, value="demo2")
+        >>> xm.write2cell(sheet=demo_sheet, design=xd, row=1, column=2, value="demo3")
+        >>> xm.write2cell(sheet=demo_sheet, design=xd, row=2, column=2, value="demo4")
+        >>> xm.save("demo", "./")
     """
 
     def __init__(self):
@@ -1561,21 +1962,45 @@ class xlsxMaker():
 
 class NuitkaMake():
     """
-    use Nuitka to build app
+    A class to facilitate building Python applications with Nuitka.
 
-    >>> nm = NuitkaMake("main.py")
-    ... nm.ADD_ARG('onefile')
-    ... nm.ADD_ARG('standalone')
-    ... nm.ADD_ARG('remove-output')
-    ... nm.ADD_ARG('follow-imports')
-    ... nm.ADD_ARG(f'output-filename="{EXE}"')
-    ... nm.ADD_ARG(f'output-dir="{CWD}"')
-    ... nm.ADD_ARG(f'windows-icon-from-ico="{ICON}"')
-    ... nm.ADD_ARG('file-description="None"')
-    ... nm.ADD_ARG('copyright="None"')
-    ... nm.ADD_ARG(f'file-version="{VER}"')
-    ... nm.ADD_ARG(f'product-version="{VER}"')
-    ... nm.MAKE()
+    This class simplifies the process of using Nuitka to compile Python scripts into standalone executables. It provides methods to add command-line arguments for the Nuitka build process and to execute the build.
+
+    Attributes:
+        main (str): The path to the main Python file to be compiled.
+        os (module): The operating system module, dynamically imported.
+        GV (GlobalVars): An instance of the GlobalVars class, providing access to global variables.
+        command (str): The Nuitka command to be executed, constructed dynamically based on provided arguments.
+
+    Examples:
+        >>> nm = NuitkaMake("main.py")
+        >>> nm.ADD_ARG('onefile')
+        >>> nm.ADD_ARG('standalone')
+        >>> nm.ADD_ARG('remove-output')
+        >>> nm.ADD_ARG('follow-imports')
+        >>> nm.ADD_ARG(f'output-filename="{EXE}"')
+        >>> nm.ADD_ARG(f'output-dir="{CWD}"')
+        >>> nm.ADD_ARG(f'windows-icon-from-ico="{ICON}"')
+        >>> nm.ADD_ARG('file-description="None"')
+        >>> nm.ADD_ARG('copyright="None"')
+        >>> nm.ADD_ARG(f'file-version="{VER}"')
+        >>> nm.ADD_ARG(f'product-version="{VER}"')
+        >>> nm.MAKE()
+
+    The class supports building applications with various configurations, including setting output directories, file names, and version information.
+
+    Methods:
+        __init__(self, main):
+            Initializes the NuitkaMake instance with the path to the main Python file.
+
+        ADD_ARG(self, arg):
+            Adds a command-line argument to the Nuitka command.
+
+        MAKE(self):
+            Executes the Nuitka build command.
+
+        HELP(self):
+            Prints help information for using Nuitka.
     """
 
     def __init__(self, main):
@@ -1583,8 +2008,7 @@ class NuitkaMake():
         main is the main file you want to build
 
         full implementation sample:
-
-        ############## 1 ##############
+        # demo1.
         CWD = GV().CURRENTWORKDIR
         (Path(CWD) / "demo").unlink(missing_ok=True)
         nm = NuitkaMake(f"{CWD}/demo.py")
@@ -1596,7 +2020,7 @@ class NuitkaMake():
         nm.MAKE()
         sysc("mv demo.bin demo")
 
-        ############## 2 ##############
+        # demo2.
         CWD  = CURRENTWORKDIR
         EXE  = 'autochain'
         os.system(f"del /f /s /q {EXE}.exe")
@@ -1645,13 +2069,17 @@ class NuitkaMake():
 
 def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, include_packages=[], include_modules=[]):
     """
-    Quick build app with Nuitka to current working directory
+    Quickly builds an application with Nuitka in the current working directory.
 
-    mainfile        : str, the main file you want to build
-    onefile         : bool, whether to build as one file
-    include_dir     : str, the include directory
-    include_packages: list, the include packages, example: ['mylibrary']
-    include_modules : list, the include modules, example: ['mylibrary.mymodule']
+    This function simplifies the process of building a Python application using Nuitka. 
+    It supports building the application as a single file, including additional directories, packages, and modules in the build.
+
+    Args:
+        mainfile (str): The path to the main Python file to build.
+        onefile (bool): If True, builds the application as a single executable file. Defaults to True.
+        include_dir (str): Path to a directory to include in the build. Defaults to None.
+        include_packages (list): A list of package names to include in the build. Defaults to an empty list.
+        include_modules (list): A list of module names to include in the build. Defaults to an empty list.
     """
     ###### import ######
     Path = _dmimport(from_module="pathlib", import_module='Path')
@@ -1703,12 +2131,23 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
 
 class Py2BAT():
     """
-    make py file to windows batch file
+    Converts a Python (.py) file to a Windows batch (.bat) file.
 
-    batchname  : name of your batch file
-    output_path: define the generated batch file path
-    
-    >>> Py2BAT("main.py", batname='test').MAKE()
+    This class facilitates the conversion of a Python script into a batch file that can be executed on Windows systems. 
+    It allows specifying the name and output path for the generated batch file.
+
+    Attributes:
+        main (str): The path to the Python file to be converted.
+        batname (str): The name of the generated batch file. Defaults to "Null".
+        output_path (str): The directory where the batch file will be saved. Defaults to the runtime path.
+
+    Examples:
+        >>> Py2BAT("main.py", batname='test').MAKE()
+        This will convert 'main.py' into a batch file named 'test.bat' in the default output path.
+
+    Methods:
+        MAKE():
+            Generates the batch file from the specified Python file.
     """
     def __init__(self, main, batname="Null", output_path=get_runtime_path()):
         ###### import ######
@@ -1873,11 +2312,29 @@ def progressbar(
 
 def merge_dicts(dict1, dict2):
     """
-    merge two dicts and return one dict
+    Merges two dictionaries into a single dictionary.
 
-    please make sure you use dict(merge_dicts(dict1, dict2)), if you want to get the merged dict
+    This function merges two dictionaries into one by iterating over their keys. 
+    If both dictionaries contain the same key, and the corresponding values are also dictionaries, 
+    it recursively merges them. Otherwise, the value from the second dictionary overrides the one from the first. 
+    The function is designed to be used with the `dict()` constructor to create a single, merged dictionary.
 
-    >>> return_dict = dict(merge_dicts(dict1, dict2))
+    Args:
+        dict1 (dict): The first dictionary to merge.
+        dict2 (dict): The second dictionary to merge.
+
+    Yields:
+        tuple: A tuple of (key, value) pairs that can be converted into a dictionary.
+
+    Example:
+        >>> dict1 = {'a': 1, 'b': {'x': 2}}
+        >>> dict2 = {'b': {'y': 3}, 'c': 4}
+        >>> merged_dict = dict(merge_dicts(dict1, dict2))
+        >>> print(merged_dict)
+        {'a': 1, 'b': {'x': 2, 'y': 3}, 'c': 4}
+
+    Note:
+        Use `dict(merge_dicts(dict1, dict2))` to obtain the merged dictionary.
     """
     ###### import ######
     # common
@@ -1900,12 +2357,24 @@ def merge_dicts(dict1, dict2):
 
 
 def merge_all_dicts(dict_container:list):
-    """ 
-    merge mutiple dicts into one dict 
+    """
+    Merges multiple dictionaries into one.
 
-    dict_container is a list, whose elements are all the dicts you want to combine
+    This function takes a list of dictionaries and merges them into a single dictionary. 
+    If the list contains only one dictionary, that dictionary is returned as is. 
+    If the list is empty, an empty dictionary is returned.
 
-    >>> merge_all_dicts([dict1, dict2, ...])
+    Args:
+        dict_container (list): A list of dictionaries to be merged.
+
+    Returns:
+        dict: A single dictionary resulting from the merger of all dictionaries in `dict_container`.
+
+    Example:
+        >>> dict1 = {'a': 1, 'b': 2}
+        >>> dict2 = {'b': 3, 'c': 4}
+        >>> merge_all_dicts([dict1, dict2])
+        {'a': 1, 'b': 3, 'c': 4}
     """
     ###### import ######
     # common
@@ -1927,7 +2396,22 @@ def merge_all_dicts(dict_container:list):
 
 
 def print_aligned(string1, string2, align_width=10, print_func=print):
-    """print string1 aligned with width to string2"""
+    """
+    Prints two strings aligned, with the first string left-aligned to a specified width.
+
+    This function prints two strings on the same line with the first string left-aligned to a specified width, 
+    followed immediately by the second string. 
+    It allows for a custom print function to be specified, enabling redirection of the output if needed.
+
+    Args:
+        string1 (str): The first string to print, which will be left-aligned.
+        string2 (str): The second string to print, which follows the first string.
+        align_width (int, optional): The width to which the first string will be aligned. Defaults to 10.
+        print_func (Callable[[str], None], optional): A custom print function to use for printing. Defaults to the built-in print function.
+
+    Returns:
+        None
+    """
     ###### import ######
     # common
     ####################
@@ -1936,7 +2420,20 @@ def print_aligned(string1, string2, align_width=10, print_func=print):
 
 
 def print_k_v_aligned(src_dict: dict , print_func=print) -> None:
-    """print dict key and value aligned"""
+    """
+    Prints each key-value pair in a dictionary aligned by the longest key.
+
+    This function iterates through a dictionary, 
+    aligning each key-value pair based on the length of the longest key. 
+    It allows for a custom print function to be specified, enabling redirection of the output if needed.
+
+    Args:
+        src_dict (dict): The source dictionary whose key-value pairs are to be printed.
+        print_func (Callable[[str], None], optional): A custom print function to use for printing. Defaults to the built-in print function.
+
+    Returns:
+        None
+    """
     longest_key_length = max(len(key) for key in src_dict.keys())
     for key, value in src_dict.items():
         print_func(f"{key.ljust(longest_key_length)} : {value}")
@@ -2123,7 +2620,7 @@ def _check_environment():
 
 
 def check_your_system():
-    """diagnose your system"""
+    """Diagnoses the current system by running a series of checks."""
     _check_os()
     _check_hardware()
     _check_network()
@@ -2135,7 +2632,12 @@ def check_your_system():
 
 
 def traceback_get():
-    """get the traceback string"""
+    """
+    Retrieves the traceback string of the current exception.
+
+    Returns:
+        str: The traceback string of the current exception.
+    """
     ###### import ######
     traceback = _dmimport(import_module="traceback")
     ####################
@@ -2143,8 +2645,13 @@ def traceback_get():
     return traceback.format_exc()
 
 
-def traceback_print():
-    """print the traceback"""
+def traceback_print() -> None:
+    """
+    Prints the traceback of the current exception to stderr.
+
+    Returns:
+        None
+    """
     ###### import ######
     traceback = _dmimport(import_module="traceback")
     ####################
@@ -2153,7 +2660,22 @@ def traceback_print():
 
 
 def exception_get(e):
-    """get the exception"""
+    """
+    Retrieves a detailed string representation of an exception.
+
+    Args:
+        e (Exception): The exception instance to be processed.
+
+    Returns:
+        str: A string that represents the detailed information of the exception, including its type and message.
+
+    Example:
+        try:
+            # Code that might raise an exception
+        except Exception as e:
+            detailed_exception_info = exception_get(e)
+            print(detailed_exception_info)  # Prints the detailed string representation of the exception
+    """
     ###### import ######
     # common
     ####################
@@ -2161,8 +2683,19 @@ def exception_get(e):
     return repr(e)
 
 
-def exception_print(e):
-    """print the exception"""
+def exception_print(e) -> None:
+    """
+    Prints a detailed representation of an exception.
+
+    Parameters:
+        e (Exception): The exception to be printed.
+
+    Example:
+        try:
+            # Code that may raise an exception
+        except Exception as e:
+            exception_print(e)  # Prints the detailed representation of the exception
+    """
     ###### import ######
     # common
     ####################
@@ -2171,7 +2704,31 @@ def exception_print(e):
 
 
 def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_lst=[]) -> list:
-    """ only support personal designed tree files, otherwise this function is useless"""
+    """
+    This module contains a function for reading and processing treezip files. 
+    It is specifically designed to work with a custom format of tree files. 
+    Using it with other formats may not yield the intended results.
+
+    Function:
+        read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_lst=[]):
+            Reads and processes a treezip file according to the specified filters.
+
+            Parameters:
+                treezip (FileType): The treezip file to be read. This should be in the custom 
+                    format designed for this function.
+                factory_lst (list, optional): A list of factory identifiers to filter the data. 
+                    Defaults to an empty list, meaning no filtering on this criterion.
+                product_lst (list, optional): A list of product identifiers to filter the data. 
+                    Defaults to an empty list, meaning no filtering on this criterion.
+                station_lst (list, optional): A list of station identifiers to filter the data. 
+                    Defaults to an empty list, meaning no filtering on this criterion.
+                type_lst (list, optional): A list of type identifiers to filter the data. 
+                    Defaults to an empty list, meaning no filtering on this criterion.
+
+            Returns:
+                list: A list of processed data entries that match the specified filters. The 
+                    structure and content of these entries depend on the custom tree file format.
+    """
     ###### import ######
     zipfile = _dmimport(import_module="zipfile")
     shutil  = _dmimport(import_module="shutil")
@@ -2344,14 +2901,19 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
 
 class dmargs():
     """
-    A simple argparse wrapper
+    A utility module providing a simplified interface for command-line argument parsing.
 
-    use sample:
-        args = dmargs("description")
-        args.add_arg("-t", "--test", type=int, default=1, help="help docs(default: %(default)s)")
+    This module offers a wrapper around argparse, making it easier to define and access command-line arguments in scripts and applications. 
+    It streamlines the process of argument definition and parsing, allowing for a more concise and readable way to handle command-line inputs.
+
+    Example Usage:
+        args = dmargs("A brief description of the script")
+        args.add_arg("-t", "--test", type=int, default=1, help="An example integer argument (default: %(default)s)")
         args = args()
 
-    then you can use args.test to get the value of the argument
+        # Access the argument value
+        test_value = args.test
+        print(f"Test Argument Value: {test_value}")
     """
 
     def __init__(self, description: str = "") -> None:
@@ -2379,9 +2941,19 @@ class dmargs():
         """
         self.parser.add_argument(*args, **kwargs)
 
-    def __call__(self):
-        return self.parser.parse_args()
+    def __call__(self, print_argv: bool=False, print_func=print):
+        """
+        Args:
+            print_argv (bool, optional): Flag for printing out the args value. Defaults to False.
+            print_func (_type_, optional): Print function. Defaults to print.
+        """
+        args = self.parser.parse_args()
 
+        if print_argv:
+            print_func("Args:")
+            print_k_v_aligned(vars(args), print_func)
+
+        return args
 
 
 if __name__ == "__main__":
