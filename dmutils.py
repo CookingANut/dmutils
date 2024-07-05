@@ -2093,9 +2093,15 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     system = GV.SYSTEM
     mainfile_name, _ = os.path.splitext(os.path.basename(mainfile)) # ideally, _ is '.py' I think.
 
-    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.exe")
-    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.bin")
-    safe_remove(f"{workdir}{GV.SEP}{mainfile_name}")
+    if not output_dir:
+        safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.exe")
+        safe_remove(f"{workdir}{GV.SEP}{mainfile_name}.bin")
+        safe_remove(f"{workdir}{GV.SEP}{mainfile_name}")
+    else:
+        safe_remove(f"{output_dir}{GV.SEP}{mainfile_name}.exe")
+        safe_remove(f"{output_dir}{GV.SEP}{mainfile_name}.bin")
+        safe_remove(f"{output_dir}{GV.SEP}{mainfile_name}")
+
     # (Path(workdir) / f"{mainfile}{''.join('.exe' if system == 'Windows' else '')}").unlink(missing_ok=True)
     
     nm = NuitkaMake(mainfile)
@@ -2127,8 +2133,13 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     nm.MAKE()
 
     if system == 'Linux':
-        src = f"{mainfile_name}.bin"
-        dst = mainfile_name
+        if not output_dir:
+            src = f"{mainfile_name}.bin"
+            dst = mainfile_name
+        else:
+            src = f"{output_dir}/{mainfile_name}.bin"
+            dst = f"{output_dir}/{mainfile_name}"
+
         if os.path.exists(src):
             os.rename(src, dst)
         else:
