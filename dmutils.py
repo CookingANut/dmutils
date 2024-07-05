@@ -1444,7 +1444,7 @@ def mkdir(path):
 
     path = path.strip().rstrip("\\")
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
 
 
 def safe_remove(file_path):
@@ -2069,7 +2069,7 @@ class NuitkaMake():
         print(self.GV.NUITKA_HELP)
 
 
-def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, include_packages=[], include_modules=[]):
+def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, include_packages=[], include_modules=[], output_dir=None):
     """
     Quickly builds an application with Nuitka in the current working directory.
 
@@ -2119,7 +2119,11 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
 
     nm.ADD_ARG('standalone')
     nm.ADD_ARG('remove-output')
-    nm.ADD_ARG(f"output-dir={workdir}")
+    if not output_dir:
+        nm.ADD_ARG(f"output-dir={workdir}")
+    else:
+        mkdir(output_dir)
+        nm.ADD_ARG(f"output-dir={output_dir}")
     nm.MAKE()
 
     if system == 'Linux':
