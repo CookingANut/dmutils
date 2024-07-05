@@ -1,56 +1,66 @@
 # metadata
-__version__ = '1.4'  
+__version__ = '1.5'  
 __author__  = 'Daemon Huang'  
 __email__   = 'morningrocks@outlook.com' 
 __date__    = '2024-07-03'
 __license__ = 'MIT'
+
 __all__ = [
-    'DmDescriptor',             # Descriptor class for method management
-    'GlobalVars',               # Class for managing global variables
-    'is_root',                  # Function to check if the current user is root
-    'win_desktop_path',         # Function to get the Windows desktop path
-    'sysc',                     # Function for system calls
-    'get_path',                 # Function to get a specific path
-    'get_all_path',             # Function to get all paths matching a pattern
-    'resource_path',            # Function to get the path of a resource
-    'read_treezip',             # Function to read a tree structure from a zip file
-    'level_x_path',             # Function to get paths at a specific level in a directory tree
-    'get_runtime_path',         # Function to get the runtime path of the application
-    'join_path',                # Function to join paths in a platform-independent way
-    'get_current_time',         # Function to get the current time
-    'teewrap',                  # Function to wrap stdout and stderr
-    'dmlog',                    # simple logging class
-    'timethis',                 # Decorator for timing functions
-    'CodeTimer',                # Class for timing code execution
-    'mkdir',                    # Function to create a directory
-    'dict2json',                # Function to convert a dictionary to a JSON string
-    'json2dict',                # Function to convert a JSON string to a dictionary
-    'json2jsone',               # Function to convert JSON to JSONE (extended JSON)
-    'dict2jsone',               # Function to convert a dictionary to JSONE
-    'openjsone',                # Function to open a JSONE file
-    'ZipReader',                # Class for reading zip files
-    'Zip2Reader',               # Class for reading zip inside a zip
-    'DateTransformer',          # Class for transforming dates
-    'ignored',                  # Function to ignore specified exceptions
-    'xlsxDesigner',             # Class for designing Excel files
-    'xlsxMaker',                # Class for creating Excel files
-    'NuitkaMake',               # Class to compile Python code with Nuitka
-    'Py2BAT',                   # Class to convert Python scripts to batch files
-    'progressbar',              # Function to display a progress bar
-    'merge_dicts',              # Function to merge dictionaries
-    'merge_all_dicts',          # Function to merge multiple dictionaries
-    'check_your_system',        # Function to check the system's compatibility
-    'traceback_get',            # Function to get traceback information
-    'traceback_print',          # Function to print traceback information
-    'exception_get',            # Function to get exception information
-    'exception_print',          # Function to print exception information
-    'print_aligned',            # Function to print aligned text
-    'safe_remove',              # Function to safely remove files or directories
-    'dedent',                   # Function to remove indentation from strings
-    'check_return_code',        # Function to check the return code of a process
-    'quickmake',                # Function for quick project setup
-    'dmargs',                   # Class for parsing command-line arguments
-    'print_k_v_aligned',        # Function to print keys and values aligned
+    # class
+    'DmGlobalVars',
+    'DmLog',
+    'DmArgs',
+    'DateTrans',
+    'xlsxDesigner',
+    'xlsxMaker',
+    'NuitkaMake',
+    'Py2BAT',
+
+    # descriptor
+    'DmDescriptor',
+
+    # context manager
+    'CodeTimer',
+    'ZipReader',
+    'Zip2Reader',
+    'ignored',
+
+    # decorator
+    'timethis',
+    'teewrap',
+
+    # function
+    'is_root',
+    'win_desktop_path',
+    'sysc',
+    'get_path',
+    'get_all_path',
+    'resource_path',
+    'read_treezip',
+    'level_x_path',
+    'get_runtime_path',
+    'join_path',
+    'get_current_time',
+    'mkdir',
+    'dict2json',
+    'json2dict',
+    'json2jsone',
+    'dict2jsone',
+    'openjsone',
+    'merge_dicts',
+    'merge_all_dicts',
+    'progressbar',
+    'check_your_system',
+    'traceback_get',
+    'traceback_print',
+    'exception_get',
+    'exception_print',
+    'print_aligned',
+    'safe_remove',
+    'dedent',
+    'check_return_code',
+    'quickmake',
+    'print_k_v_aligned',
 ]
 
 
@@ -75,16 +85,7 @@ class DmDescriptor:
                     # Implementation of the method
 
             # Calling the method on the class directly
-            MyClass.my_method()
-
-            # Calling the method on an instance of the class
-            instance = MyClass()
-            instance.my_method()
-
-    Note:
-        If the method is called directly from the class and requires arguments, a TypeError will be raised.
-        Ensure that methods using this descriptor can handle being called with no arguments if they are to be
-        called from the class level.
+            MyClass.my_method
     """
     ###### import ######
     # common
@@ -163,7 +164,7 @@ def _dmimport(*, from_module=None, import_module):
         return [f"from_module={from_module}::import_module={import_module} error", e]
 
 
-class GlobalVars:
+class DmGlobalVars:
     """
     Hold global variables and configurations for this module.
 
@@ -1293,7 +1294,7 @@ def __logorder__(func):
     return wrapper
 
 
-class dmlog():
+class DmLog():
     """
     A simple logging system.
 
@@ -1709,7 +1710,7 @@ class Zip2Reader(object):
         ...
 
 
-class DateTransformer():
+class DateTrans():
     """
     A class for transforming date strings into various formats and extracting date-related information.
 
@@ -1902,6 +1903,7 @@ class xlsxMaker():
 
         self.wb = self.openpyxl.Workbook()
         self.wb.remove(self.wb['Sheet'])
+        self.GV = DmGlobalVars()
 
     def create_sheet(self, sheetname='undefine'):
         return self.wb.create_sheet(sheetname)
@@ -1954,10 +1956,10 @@ class xlsxMaker():
         sheet.merge_cells(start_row=start_row, start_column=start_column, end_row=end_row, end_column=end_column)
     
     def save(self, xlsxname, xlsxpath, allautowidth=True):
-        self.wb.save(f"{xlsxpath}{GlobalVars().SEP}{xlsxname}.xlsx")
+        self.wb.save(f"{xlsxpath}{self.GV.SEP}{xlsxname}.xlsx")
         if allautowidth:
             for sheet in self.wb.sheetnames:
-                self.auto_fit_width(excel_name=f"{xlsxpath}{GlobalVars().SEP}{xlsxname}.xlsx", sheet_name=sheet)
+                self.auto_fit_width(excel_name=f"{xlsxpath}{self.GV.SEP}{xlsxname}.xlsx", sheet_name=sheet)
 
 
 class NuitkaMake():
@@ -2041,7 +2043,7 @@ class NuitkaMake():
         self.os = _dmimport(import_module='os')
         ####################
 
-        self.GV = GlobalVars()
+        self.GV = DmGlobalVars()
 
         match self.GV.SYSTEM:
             case 'Windows':
@@ -2086,7 +2088,7 @@ def quickmake(mainfile: str, onefile: bool = True, include_dir: str = None, incl
     os   = _dmimport(import_module='os')
     ####################
 
-    GV = GlobalVars()
+    GV = DmGlobalVars()
     workdir = GV.CURRENTWORKDIR
     system = GV.SYSTEM
     mainfile_name, _ = os.path.splitext(os.path.basename(mainfile)) # ideally, _ is '.py' I think.
@@ -2157,13 +2159,14 @@ class Py2BAT():
         self.main = main
         self.batname = batname
         self.output_path = output_path
+        self.GV = DmGlobalVars()
         
     def MAKE(self):
         with CodeTimer():
             with open(f'{self.main}','r', encoding="utf8") as script:
                 codes = script.readlines()
-                with open(f"{self.output_path}{GlobalVars().SEP}{self.batname}.bat", 'w', encoding="utf8") as batch:
-                    batch.write(GlobalVars().BATHEADER)
+                with open(f"{self.output_path}{self.GV.SEP}{self.batname}.bat", 'w', encoding="utf8") as batch:
+                    batch.write(self.GV.BATHEADER)
                     batch.writelines(codes)
 
 
@@ -2473,7 +2476,7 @@ def _check_network(region="cn", timeout=10):
     socket = _dmimport(import_module="socket")
     ####################
 
-    GV = GlobalVars()
+    GV = DmGlobalVars()
     print_aligned("[Network Test", "]", 15)
     if timeout > 0:
         print(f'Setting timeout: {timeout}')
@@ -2600,9 +2603,9 @@ def _check_hardware():
     print('machine      :', platform.machine())
     print('processor    :', platform.processor())
     
-    if GlobalVars().SYSTEM == "linux":
+    if DmGlobalVars().SYSTEM == "linux":
         subprocess.call(['lscpu'])
-    elif GlobalVars().SYSTEM == "windows":
+    elif DmGlobalVars().SYSTEM == "windows":
         out, _ = sysc("wmic cpu get name")
         cpu = out.split('\n')[2]
         print('CPU          :', cpu)
@@ -2735,7 +2738,7 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
     os      = _dmimport(import_module="os")
     ####################
 
-    GV = GlobalVars()
+    GV = DmGlobalVars()
     path_list = []
     shutil.copyfile(treezip, fr"{GV.CURRENTWORKDIR}{GV.SEP}tmptree.zip")
     print(f"copy file to {GV.CURRENTWORKDIR}{GV.SEP}tmptree.zip")
@@ -2899,7 +2902,7 @@ def read_treezip(treezip, factory_lst=[], product_lst=[], station_lst=[], type_l
     return path_list
 
 
-class dmargs():
+class DmArgs():
     """
     A utility module providing a simplified interface for command-line argument parsing.
 
@@ -2921,7 +2924,8 @@ class dmargs():
         self.argparse = _dmimport(import_module="argparse")
         ####################
 
-        self.parser = self.argparse.ArgumentParser(description=description)
+        description = dedent(description)
+        self.parser = self.argparse.ArgumentParser(description=description, formatter_class=self.argparse.RawDescriptionHelpFormatter)
 
     def add_arg(self, *args, **kwargs) -> None:
         """
@@ -2942,6 +2946,12 @@ class dmargs():
         """
         self.parser.add_argument(*args, **kwargs)
 
+    def add_subparser(self, *args, **kwargs) -> None:
+        return self.parser.add_subparsers(*args, **kwargs)
+
+    def add_argument_group(self, parser_inst, *args, **kwargs) -> None:
+        parser_inst.add_argument_group(*args, **kwargs)
+
     def __call__(self, print_argv: bool=False, print_func=print):
         """
         Args:
@@ -2958,8 +2968,8 @@ class dmargs():
 
 
 if __name__ == "__main__":
-    LOG = dmlog(branch="dmutils")
-    GV = GlobalVars()
+    LOG = DmLog(branch="dmutils")
+    GV = DmGlobalVars()
     print_aligned("Version", f": {__version__}", print_func=LOG.info)
     print_aligned("Author", f": {__author__}", print_func=LOG.info)
     print_aligned("Email", f": {__email__}", print_func=LOG.info)   
