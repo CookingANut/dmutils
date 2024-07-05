@@ -2927,7 +2927,8 @@ class dmargs():
         """
         - add_arg('-a', '--arg1', type=int, default=1, help="Description for arg1, (default: %(default)s)")
         - add_arg('-c', '--arg3', type=str, default='', choices=['str1', 'str2', 'str3', 'str4'], help='')
-
+        - add_arg('-b', '--arg2', metavar='X', type=str, nargs='+', choices=['1', '2', '3'], help='')
+        
         - add_arg('-f', '--flag', action="store_true", help="Enable some flag")
             Action: "store_true" means that if the -f or --flag is present in the command line,
             the corresponding variable is set to True. If not present, it defaults to False.
