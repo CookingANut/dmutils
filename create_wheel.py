@@ -1,8 +1,10 @@
 from dmutils import (
     __version__, 
+    __author__,
+    __email__,
     progressbar, 
     sysc, 
-    timethis
+    timethis,
 )
 import os, sys
 
@@ -43,10 +45,10 @@ class WheelMaker():
             writecode("setup(")
             writecode("    name='dmutils',")
             writecode("    version='{}',".format(__version__))
-            writecode("    author='Daemon Huang',")
-            writecode("    author_email='morningrocks@outlook.com',")
+            writecode("    author='{}',".format(__author__))
+            writecode("    author_email='{}',".format(__email__))
             writecode("    url='',")
-            writecode("    install_requires=['tqdm','openpyxl', 'nuitka', 'cryptography'],")
+            writecode("    install_requires=['tqdm','openpyxl', 'nuitka', 'cryptography', 'argparse'],")
             writecode("    python_requires='>=3.10',")
             writecode("    py_modules=['dmutils'],")
             writecode(")")
