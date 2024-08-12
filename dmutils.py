@@ -906,7 +906,6 @@ def _set_terminal_size(fd, rows, cols):
     """
     Set the terminal size for the given file descriptor.
     """
-
     ###### import ######
     fcntl = _dmimport(import_module='fcntl')
     termios = _dmimport(import_module='termios')
@@ -915,6 +914,7 @@ def _set_terminal_size(fd, rows, cols):
 
     size = struct.pack('HHHH', rows, cols, 0, 0)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, size)
+
 
 def _copy_terminal_settings(fd):
     """
@@ -932,9 +932,7 @@ def _apply_terminal_settings(fd, settings):
     Apply terminal settings to the given file descriptor.
     """
     ###### import ######
-    fcntl = _dmimport(import_module='fcntl')
     termios = _dmimport(import_module='termios')
-    struct = _dmimport(import_module='struct')
     ####################
 
     termios.tcsetattr(fd, termios.TCSANOW, settings)
@@ -1006,9 +1004,10 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
                 OUT.append(stripped_line)
     else:
         master_fd, slave_fd = pty.openpty()
-        # rows, cols = _get_terminal_size(0)
-        # _set_terminal_size(master_fd, rows, cols)
-        _apply_terminal_settings(master_fd, _copy_terminal_settings(0))
+        rows, cols = _get_terminal_size(0)
+        _set_terminal_size(master_fd, rows, cols)
+        original_settings = _copy_terminal_settings(0)
+        _apply_terminal_settings(slave_fd, original_settings)
 
         p = subprocess.Popen(
             command,
