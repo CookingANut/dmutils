@@ -3101,8 +3101,8 @@ def _dmSigHandler(sig, frame):
     sys = _dmimport(import_module="sys")
     ####################
 
-    print('\ndmutils warning:')
-    print('     User interruption detected. Exiting...')
+    print('\ndmutils signal detected:')
+    print('     Interruption detected. Exiting...')
     sys.exit(1)
 
 
@@ -3144,11 +3144,13 @@ def _dmExceptionHandler(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    print("\ndmutils uncaught exception: ", exc_type, exc_value)
+    print("\ndmutils uncaught exception: ")
+    print(f"    exception type : {exc_type}")
+    print(f"    exception value: {exc_value}")
     for filename, lineno, name, line in traceback.extract_tb(exc_traceback):
-        print(f"  <{filename}>, line {lineno}, in {name}")
+        print(f"    {filename}, line {lineno}, in {name}")
         if line:
-            print(f"    {line.strip()}")
+            print(f"        {line.strip()}")
 
 
 def dmExceptionHook(exception_handler=_dmExceptionHandler):
