@@ -1,8 +1,8 @@
 # metadata
-__version__ = '1.5'  
+__version__ = '1.6'  
 __author__  = 'Daemon Huang'  
 __email__   = 'morningrocks@outlook.com' 
-__date__    = '2024-07-03'
+__date__    = '2024-08-12'
 __license__ = 'MIT'
 
 __all__ = [
@@ -61,6 +61,8 @@ __all__ = [
     'check_return_code',
     'quickmake',
     'print_k_v_aligned',
+    'dmSigRegist',
+    'dmExceptionHook',
 ]
 
 
@@ -884,7 +886,38 @@ def win_desktop_path():
     return winreg.QueryValueEx(key, "Desktop")[0]
 
 
-def sysc(command: str, cwd=None, outprint=True, printfunction=print):
+def get_terminal_size(fd):
+    """
+    Get the terminal size for the given file descriptor.
+    """
+    ###### import ######
+    array = _dmimport(import_module='array')
+    fcntl = _dmimport(import_module='fcntl')
+    termios = _dmimport(import_module='termios')
+    ####################
+
+    buf = array.array('H', [0, 0, 0, 0])
+    fcntl.ioctl(fd, termios.TIOCGWINSZ, buf, True)
+    rows, cols, _, _ = buf
+    return rows, cols
+
+
+def set_terminal_size(fd, rows, cols):
+    """
+    Set the terminal size for the given file descriptor.
+    """
+
+    ###### import ######
+    fcntl = _dmimport(import_module='fcntl')
+    termios = _dmimport(import_module='termios')
+    struct = _dmimport(import_module='struct')
+    ####################
+
+    size = struct.pack('HHHH', rows, cols, 0, 0)
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, size)
+
+
+def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=True):
     """
     Executes a system command and optionally prints its output in real-time.
 
@@ -892,7 +925,8 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=print):
         command (str): The system command to be executed.
         cwd (str, optional): The working directory in which the command should be executed. Defaults to None, which uses the current working directory.
         outprint (bool, optional): Flag indicating whether to print the command's output in real-time. Defaults to True.
-        printfunction (callable, optional): A custom print function to use for printing the command's output. Defaults to the built-in print function.
+        printfunction (callable, optional): A custom print function to use for printing the command's output. Defaults to None.
+        pty_enabled (bool, optional): Flag indicating whether to use a pseudo-terminal for the command. Defaults to True.
 
     Returns:
         tuple: A tuple containing two elements:
@@ -912,29 +946,77 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=print):
     """
     ###### import ######
     subprocess = _dmimport(import_module='subprocess')
+    os = _dmimport(import_module='os')
+    sys = _dmimport(import_module='sys')
+    if os.name != 'nt' and pty_enabled:
+        pty = _dmimport(import_module='pty')
+
+    # pty
+    # subprocess
+    # os
+    # sys
+    # fcntl, termios, struct, array,
     ####################
 
-    p = subprocess.Popen(
+    OUT = []
+    RC = None
+    
+    if os.name == 'nt' or not pty_enabled:
+        p = subprocess.Popen(
         command,
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         encoding='utf-8',
-        cwd=cwd
-    )
-    OUT = []
-    while (line := p.stdout.readline()) != '' or (RC := p.poll()) is None:
-        # if line:
-        #     if outprint:
-        #         printfunction(line.strip())
-        #     OUT.append(line.strip())
+        cwd=cwd,
+        executable="/bin/bash" if os.name != 'nt' else None
+        )
+        while (line := p.stdout.readline()) != '' or (RC := p.poll()) is None:
+            if line:
+                stripped_line = line.strip()
+                if outprint:
+                    if printfunction:
+                        printfunction(stripped_line)
+                    else:
+                        sys.stdout.write("\r" + line)
+                        sys.stdout.flush()
+                OUT.append(stripped_line)
+    else:
+        master_fd, slave_fd = pty.openpty()
+        rows, cols = get_terminal_size(0)
+        set_terminal_size(master_fd, rows, cols)
 
-        # add \r to overwrite the line for the case taht executing apt-get commands
-        if line:
-            stripped_line = line.strip()
-            if outprint:
-                printfunction('\r' + stripped_line if printfunction == print else stripped_line)
-            OUT.append(stripped_line)
+        p = subprocess.Popen(
+            command,
+            shell=True,
+            stdout=slave_fd,
+            stderr=subprocess.STDOUT,
+            encoding='utf-8',
+            cwd=cwd,
+            executable="/bin/bash",
+            close_fds=True
+        )
+        os.close(slave_fd)
+
+        while True:
+            try:
+                line = os.read(master_fd, 1024).decode('utf-8')
+                if line:
+                    if outprint:
+                        if printfunction:
+                            printfunction(line.strip())
+                        else:
+                            sys.stdout.write("\r" + line)
+                            sys.stdout.flush()
+                    OUT.extend(line.strip().split('\n'))
+            except OSError:
+                break
+            if p.poll() is not None:
+                break
+
+        os.close(master_fd)
+        p.wait()
+        RC = p.returncode
 
     return OUT, RC
 
@@ -2980,6 +3062,90 @@ class DmArgs():
             print_k_v_aligned(vars(args), print_func)
 
         return args
+
+
+def _dmSigHandler(sig, frame):
+    """
+    Signal handler for gracefully exiting the program on user interruption.
+
+    Args:
+        sig: Signal number.
+        frame: Current stack frame.
+    Returns:
+        None
+    """
+    ###### import ######
+    sys = _dmimport(import_module="sys")
+    ####################
+
+    print('\ndmutils warning:')
+    print('     User interruption detected. Exiting...')
+    sys.exit(1)
+
+
+def dmSigRegist(signal_handler=_dmSigHandler):
+    """
+    Registers a signal handler for handling user interruptions (e.g., Ctrl+C).
+
+    Args:
+        signal_handler (callable, optional): The signal handler function. Defaults to dmSighandler.
+    Returns:
+        None
+
+    Usage:
+        dmSigRegist()
+    """
+    ###### import ######
+    signal = _dmimport(import_module="signal")
+    ####################
+    signal.signal(signal.SIGINT, signal_handler)
+
+
+def _dmExceptionHandler(exc_type, exc_value, exc_traceback):
+    """
+    Handles uncaught exceptions and provides a detailed traceback.
+
+    This function is designed to be used as a custom exception handler that captures uncaught exceptions,
+    prints a detailed traceback, and handles KeyboardInterrupt exceptions gracefully.
+
+    Args:
+        exc_type (type): The exception type.
+        exc_value (Exception): The exception instance.
+        exc_traceback (traceback): The traceback object.
+    """
+    ###### import ######
+    sys = _dmimport(import_module="sys")
+    traceback = _dmimport(import_module="traceback")
+    ####################
+
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    print("\ndmutils uncaught exception: ", exc_type, exc_value)
+    for filename, lineno, name, line in traceback.extract_tb(exc_traceback):
+        print(f"  <{filename}>, line {lineno}, in {name}")
+        if line:
+            print(f"    {line.strip()}")
+
+
+def dmExceptionHook(exception_handler=_dmExceptionHandler):
+    """
+    Registers a custom exception handler for uncaught exceptions.
+
+    This function sets a custom exception handler that will be invoked for uncaught exceptions,
+    replacing the default `sys.excepthook`. The custom handler can provide more detailed
+    information about the exception and handle specific types of exceptions differently.
+
+    Args:
+        exception_handler (callable, optional): The custom exception handler function. Defaults to dmExceptionHandler.
+    Usage:
+        dmExceptionHook()
+    """
+    ###### import ######
+    sys = _dmimport(import_module="sys")
+    ####################
+
+    sys.excepthook = exception_handler
 
 
 if __name__ == "__main__":
