@@ -886,7 +886,7 @@ def win_desktop_path():
     return winreg.QueryValueEx(key, "Desktop")[0]
 
 
-def get_terminal_size(fd):
+def _get_terminal_size(fd):
     """
     Get the terminal size for the given file descriptor.
     """
@@ -902,7 +902,7 @@ def get_terminal_size(fd):
     return rows, cols
 
 
-def set_terminal_size(fd, rows, cols):
+def _set_terminal_size(fd, rows, cols):
     """
     Set the terminal size for the given file descriptor.
     """
@@ -915,6 +915,29 @@ def set_terminal_size(fd, rows, cols):
 
     size = struct.pack('HHHH', rows, cols, 0, 0)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, size)
+
+def _copy_terminal_settings(fd):
+    """
+    Copy terminal settings from the given file descriptor.
+    """
+    ###### import ######
+    termios = _dmimport(import_module='termios')
+    ####################
+
+    return termios.tcgetattr(fd)
+
+
+def _apply_terminal_settings(fd, settings):
+    """
+    Apply terminal settings to the given file descriptor.
+    """
+    ###### import ######
+    fcntl = _dmimport(import_module='fcntl')
+    termios = _dmimport(import_module='termios')
+    struct = _dmimport(import_module='struct')
+    ####################
+
+    termios.tcsetattr(fd, termios.TCSANOW, settings)
 
 
 def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=True):
@@ -983,8 +1006,9 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
                 OUT.append(stripped_line)
     else:
         master_fd, slave_fd = pty.openpty()
-        rows, cols = get_terminal_size(0)
-        set_terminal_size(master_fd, rows, cols)
+        # rows, cols = _get_terminal_size(0)
+        # _set_terminal_size(master_fd, rows, cols)
+        _apply_terminal_settings(master_fd, _copy_terminal_settings(0))
 
         p = subprocess.Popen(
             command,
