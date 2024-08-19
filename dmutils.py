@@ -938,7 +938,7 @@ def _apply_terminal_settings(fd, settings):
     termios.tcsetattr(fd, termios.TCSANOW, settings)
 
 
-def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=True):
+def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=True, returntype=list):
     """
     Executes a system command and optionally prints its output in real-time.
 
@@ -948,6 +948,7 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
         outprint (bool, optional): Flag indicating whether to print the command's output in real-time. Defaults to True.
         printfunction (callable, optional): A custom print function to use for printing the command's output. Defaults to None.
         pty_enabled (bool, optional): Flag indicating whether to use a pseudo-terminal for the command. Defaults to True.
+        returntype (type, optional): The type of the return value. Can be either `list` or `str`. Defaults to `list`.
 
     Returns:
         tuple: A tuple containing two elements:
@@ -963,7 +964,7 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
         Combine win_command and bash_command into one unify function
         - use p.stdout to get output instead of p.communicate to have a real time output
         - use p.poll() to check if the process is still running or not
-        - return output -> list and return code
+        - Returns output as a list or string and the return code.
     """
     ###### import ######
     subprocess = _dmimport(import_module='subprocess')
@@ -979,7 +980,10 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
     # fcntl, termios, struct, array,
     ####################
 
-    OUT = []
+    if returntype not in [list, str]:
+        raise ValueError("returntype must be 'list' or 'str'")
+    
+    OUT = [] if returntype == list else ""
     RC = None
     
     if os.name == 'nt' or not pty_enabled:
@@ -1001,7 +1005,10 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
                     else:
                         sys.stdout.write("\r" + line)
                         sys.stdout.flush()
-                OUT.append(stripped_line)
+                if returntype == list:
+                    OUT.extend(stripped_line.split('\n'))
+                else:
+                    OUT += line
     else:
         master_fd, slave_fd = pty.openpty()
         rows, cols = _get_terminal_size(0)
@@ -1031,7 +1038,10 @@ def sysc(command: str, cwd=None, outprint=True, printfunction=None, pty_enabled=
                         else:
                             sys.stdout.write("\r" + line)
                             sys.stdout.flush()
-                    OUT.extend(line.strip().split('\n'))
+                    if returntype == list:
+                        OUT.extend(line.strip().split('\n'))
+                    else:
+                        OUT += line
             except OSError:
                 break
             if p.poll() is not None:
