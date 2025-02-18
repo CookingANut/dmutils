@@ -1508,7 +1508,7 @@ def timethis(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = round((time.time() - start), 3)
-        print(f'{func.__name__} running time: {end}sec.')
+        print(f"{func.__name__} ended [{end}s]")
         return result
     return wrapper
 
